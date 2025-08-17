@@ -4,17 +4,17 @@
 import { useState, useEffect } from 'react';
 import { getReports } from '@/lib/api';
 import { Report } from '@/types/report';
+import { Timestamp } from 'firebase/firestore';
 
 interface ReportListProps {
   address: string;
 }
 
-// Firestore Timestamp를 'YYYY-MM-DD' 형식의 문자열로 변환하는 함수
-const formatDate = (timestamp: any): string => {
+const formatDate = (timestamp: Timestamp): string => {
   if (!timestamp || !timestamp.seconds) {
     return '날짜 정보 없음';
   }
-  const date = new Date(timestamp.seconds * 1000);
+  const date = timestamp.toDate();
   return date.toISOString().split('T')[0];
 };
 
@@ -31,8 +31,7 @@ const ReportList = ({ address }: ReportListProps) => {
       setError(null);
       try {
         const data = await getReports(address);
-        // 최신순으로 정렬
-        data.sort((a, b) => (b.createdAt as any).seconds - (a.createdAt as any).seconds);
+        data.sort((a, b) => (b.createdAt as Timestamp).seconds - (a.createdAt as Timestamp).seconds);
         setReports(data);
       } catch (err) {
         setError('평가 목록을 불러오는 데 실패했습니다.');
@@ -80,7 +79,7 @@ const ReportList = ({ address }: ReportListProps) => {
                 ))}
               </div>
             </div>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt)}</span>
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt as Timestamp)}</span>
           </div>
         </div>
       ))}
