@@ -1,4 +1,5 @@
 // /lib/api.ts
+import { getAuth } from 'firebase/auth';
 import { Report } from '@/types/report';
 import { ReportSummary } from '@/app/api/report/summary/route';
 
@@ -12,7 +13,6 @@ async function handleResponse(response: Response) {
   if (response.ok) {
     return response.json();
   }
-  // 에러 응답의 경우, body에서 에러 메시지를 파싱하여 throw
   const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.' }));
   throw new Error(errorData.error || `Request failed with status ${response.status}`);
 }
@@ -45,7 +45,22 @@ export const getReports = async (address: string): Promise<Omit<Report, 'uid'>[]
  * @description 현재 로그인한 사용자가 평가를 제출할 자격이 있는지 확인합니다. (연 1회)
  */
 export const checkEligibility = async (): Promise<{ eligible: boolean; reason?: string }> => {
-  const response = await fetch(`${API_BASE_URL}/report?checkEligibility=true`);
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error('로그인이 필요합니다.');
+  }
+
+  const token = await user.getIdToken();
+
+  const response = await fetch(`${API_BASE_URL}/report?checkEligibility=true`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   return handleResponse(response);
 };
 
