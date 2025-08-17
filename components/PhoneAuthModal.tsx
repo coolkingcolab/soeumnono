@@ -57,7 +57,7 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
       setErrorMessage('인증번호 전송에 실패했습니다. 전화번호를 확인하거나 잠시 후 다시 시도해주세요.');
       window.recaptchaVerifier.render().then((widgetId) => {
         // @ts-ignore 대신 @ts-expect-error 사용
-        // @ts-expect-error - grecaptcha is loaded from external script
+        // @ts-expect-error - grecaptcha is loaded from external script but its type is not globally available
         window.grecaptcha.reset(widgetId);
       });
     } finally {
