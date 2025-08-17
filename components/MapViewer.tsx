@@ -3,27 +3,21 @@
 
 import { useEffect, useRef } from 'react';
 
-// Naver Maps API 타입 정의
-interface NaverMap {
-  new (element: HTMLElement, options: NaverMapOptions): NaverMapInstance;
-}
+// Naver Maps API 타입 정의 (클래스 생성자 타입으로 수정)
 interface NaverMapInstance {
-  setCenter: (latlng: NaverLatLng) => void;
+  setCenter: (latlng: NaverLatLngInstance) => void;
   setZoom: (zoom: number) => void;
 }
-interface NaverMapOptions {
-  center: NaverLatLng;
-  zoom: number;
-}
-interface NaverLatLng {
-  new (lat: number, lng: number): NaverLatLng;
-}
-interface NaverMarker {
-    new (options: { position: NaverLatLng; map: NaverMapInstance }): void;
-}
+interface NaverLatLngInstance {}
+interface NaverMarkerInstance {}
+
+type NaverMap = new (element: HTMLElement, options: { center: NaverLatLngInstance; zoom: number }) => NaverMapInstance;
+type NaverLatLng = new (lat: number, lng: number) => NaverLatLngInstance;
+type NaverMarker = new (options: { position: NaverLatLngInstance; map: NaverMapInstance }) => NaverMarkerInstance;
+
 interface NaverService {
   reverseGeocode: (
-    options: { coords: NaverLatLng; orders: string },
+    options: { coords: NaverLatLngInstance; orders: string },
     callback: (status: number, response: ReverseGeocodeResponse) => void
   ) => void;
   geocode: (
@@ -53,7 +47,7 @@ declare global {
         LatLng: NaverLatLng;
         Marker: NaverMarker;
         Event: {
-          addListener: (map: NaverMapInstance, event: string, handler: (e: { coord: NaverLatLng }) => void) => void;
+          addListener: (map: NaverMapInstance, event: string, handler: (e: { coord: NaverLatLngInstance }) => void) => void;
         };
         Service: NaverService;
       };
@@ -78,7 +72,7 @@ const MapViewer = ({ selectedAddress, onMapClick }: MapViewerProps) => {
       }
       const script = document.createElement('script');
       script.id = 'naver-maps-script';
-      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
+      script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
