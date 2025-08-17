@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
 // [GET] 인증 상태 확인
 export async function GET() {
-  const cookieStore = cookies(); // ✅ 동기 함수로 호출
+  const cookieStore = await cookies(); // ✅ 동기 함수로 호출
   const sessionCookie = cookieStore.get('session')?.value || '';
 
   if (!sessionCookie) {
