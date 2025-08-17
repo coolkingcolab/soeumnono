@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { auth } from '@/lib/firebase'; // Firebase 초기화 파일에서 auth 객체 가져오기
+import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { noiseOptions } from '@/constants/noiseOptions';
 import { checkEligibility, submitReport } from '@/lib/api';
@@ -21,7 +21,6 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isEligible, setIsEligible] = useState(false);
 
-  // 사용자 인증 상태 감지
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -29,10 +28,9 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
     return () => unsubscribe();
   }, []);
 
-  // 모달이 열릴 때마다 평가 자격 확인
   useEffect(() => {
     if (isOpen && currentUser) {
-      setErrorMessage(''); // 이전 에러 메시지 초기화
+      setErrorMessage('');
       const verifyEligibility = async () => {
         try {
           const data = await checkEligibility();
@@ -78,12 +76,15 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
     try {
       await submitReport({ address, score, noiseTypes: selectedNoiseTypes });
       alert('평가가 성공적으로 등록되었습니다.');
-      onClose(); // 성공 시 모달 닫기
-      // 상태 초기화
+      onClose();
       setScore(3);
       setSelectedNoiseTypes([]);
-    } catch (error: any) {
-      setErrorMessage(error.message || '평가 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (error) { // any 타입 제거
+      if (error instanceof Error) {
+        setErrorMessage(error.message || '평가 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setErrorMessage('알 수 없는 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +115,6 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
              </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            {/* 점수 선택 */}
             <div className="mb-4">
               <label className="block text-md font-medium text-gray-700 mb-2">소음 점수 (5점이 가장 심각)</label>
               <div className="flex items-center justify-between">
@@ -132,7 +132,6 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
               </div>
             </div>
 
-            {/* 소음 종류 선택 */}
             <div className="mb-6">
               <label className="block text-md font-medium text-gray-700 mb-2">주요 소음 종류 (중복 선택 가능)</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
