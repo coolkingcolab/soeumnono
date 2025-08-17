@@ -3,13 +3,14 @@
 
 import { useEffect, useRef } from 'react';
 
-// Naver Maps API 타입 정의 (클래스 생성자 타입으로 수정)
+// Naver Maps API 타입 정의
 interface NaverMapInstance {
   setCenter: (latlng: NaverLatLngInstance) => void;
   setZoom: (zoom: number) => void;
 }
-interface NaverLatLngInstance {}
-interface NaverMarkerInstance {}
+// 빈 인터페이스를 object 타입 별칭으로 수정
+type NaverLatLngInstance = object;
+type NaverMarkerInstance = object;
 
 type NaverMap = new (element: HTMLElement, options: { center: NaverLatLngInstance; zoom: number }) => NaverMapInstance;
 type NaverLatLng = new (lat: number, lng: number) => NaverLatLngInstance;
