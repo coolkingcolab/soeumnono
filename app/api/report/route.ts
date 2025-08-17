@@ -6,6 +6,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Report } from '@/types/report';
 
+// .replace()를 다시 추가하여 로컬과 Vercel 환경 모두 호환되도록 수정
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -22,7 +23,6 @@ const db = getFirestore();
 const auth = getAuth();
 
 async function verifyUser(): Promise<string | null> {
-  // Vercel 빌드 환경의 타입 추론 오류를 해결하기 위해 await 추가
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('session')?.value || '';
   if (!sessionCookie) return null;
