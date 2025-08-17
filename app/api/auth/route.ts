@@ -45,20 +45,19 @@ export async function POST(request: NextRequest) {
 
 // [GET] 인증 상태 확인
 export async function GET() {
-    // Vercel 빌드 환경의 타입 추론 오류를 해결하기 위해 await 추가
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value || '';
+  const cookieStore = cookies(); // ✅ 동기 함수로 호출
+  const sessionCookie = cookieStore.get('session')?.value || '';
 
-    if (!sessionCookie) {
-        return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
-    }
+  if (!sessionCookie) {
+    return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
+  }
 
-    try {
-        const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
-        return NextResponse.json({ isAuthenticated: true, user: decodedClaims }, { status: 200 });
-    } catch {
-        return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
-    }
+  try {
+    const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
+    return NextResponse.json({ isAuthenticated: true, user: decodedClaims }, { status: 200 });
+  } catch {
+    return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
+  }
 }
 
 // [DELETE] 로그아웃: 세션 쿠키 삭제
