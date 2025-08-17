@@ -17,6 +17,7 @@ if (!getApps().length) {
   });
 }
 
+// [POST] 로그인: 세션 쿠키 생성
 export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
@@ -24,23 +25,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ID token is required.' }, { status: 400 });
     }
 
-    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await getAuth().createSessionCookie(idToken, { expiresIn });
 
-    cookies().set('session', sessionCookie, {
+    // NextResponse를 생성하고, 그 응답 객체에 쿠키를 설정해야 합니다.
+    const response = NextResponse.json({ status: 'success' }, { status: 200 });
+    response.cookies.set('session', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: expiresIn,
+      maxAge: expiresIn / 1000, // maxAge는 초 단위
       path: '/',
     });
 
-    return NextResponse.json({ status: 'success' }, { status: 200 });
+    return response;
   } catch (error) {
     console.error('Session login error:', error);
     return NextResponse.json({ error: 'Failed to create session.' }, { status: 401 });
   }
 }
 
+// [GET] 인증 상태 확인
 export async function GET() {
     const sessionCookie = cookies().get('session')?.value || '';
 
@@ -51,15 +55,23 @@ export async function GET() {
     try {
         const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
         return NextResponse.json({ isAuthenticated: true, user: decodedClaims }, { status: 200 });
-    } catch { // 사용하지 않는 error 변수 제거
+    } catch {
         return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
     }
 }
 
+// [DELETE] 로그아웃: 세션 쿠키 삭제
 export async function DELETE() {
   try {
-    cookies().delete('session');
-    return NextResponse.json({ status: 'success', message: 'Signed out successfully.' }, { status: 200 });
+    // 쿠키를 삭제하기 위해 만료된 쿠키를 설정합니다.
+    const response = NextResponse.json({ status: 'success', message: 'Signed out successfully.' }, { status: 200 });
+    response.cookies.set('session', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0), // 과거 날짜로 설정하여 즉시 만료
+        path: '/',
+    });
+    return response;
   } catch (error) {
     console.error('Sign out error:', error);
     return NextResponse.json({ error: 'Failed to sign out.' }, { status: 500 });
