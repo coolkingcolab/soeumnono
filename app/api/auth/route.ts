@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() { // 사용하지 않는 request 파라미터 제거
+export async function GET() {
     const sessionCookie = cookies().get('session')?.value || '';
 
     if (!sessionCookie) {
@@ -51,12 +51,12 @@ export async function GET() { // 사용하지 않는 request 파라미터 제거
     try {
         const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
         return NextResponse.json({ isAuthenticated: true, user: decodedClaims }, { status: 200 });
-    } catch (error) {
+    } catch { // 사용하지 않는 error 변수 제거
         return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
     }
 }
 
-export async function DELETE() { // 사용하지 않는 request 파라미터 제거
+export async function DELETE() {
   try {
     cookies().delete('session');
     return NextResponse.json({ status: 'success', message: 'Signed out successfully.' }, { status: 200 });
