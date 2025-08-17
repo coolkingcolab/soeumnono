@@ -1,4 +1,5 @@
 // /app/api/auth/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -20,15 +21,13 @@ if (!getApps().length) {
 export async function POST(request: NextRequest) {
   try {
     const { idToken } = await request.json();
-    
     if (!idToken) {
       return NextResponse.json({ error: 'ID token is required.' }, { status: 400 });
     }
-    
+
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await getAuth().createSessionCookie(idToken, { expiresIn });
-    
-    // NextResponse를 생성하고, 그 응답 객체에 쿠키를 설정해야 합니다.
+
     const response = NextResponse.json({ status: 'success' }, { status: 200 });
     response.cookies.set('session', sessionCookie, {
       httpOnly: true,
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
       maxAge: expiresIn / 1000, // maxAge는 초 단위
       path: '/',
     });
-    
+
     return response;
   } catch (error) {
     console.error('Session login error:', error);
@@ -46,33 +45,32 @@ export async function POST(request: NextRequest) {
 
 // [GET] 인증 상태 확인
 export async function GET() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session')?.value || '';
-  
-  if (!sessionCookie) {
-    return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
-  }
-  
-  try {
-    const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
-    return NextResponse.json({ isAuthenticated: true, user: decodedClaims }, { status: 200 });
-  } catch {
-    return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
-  }
+    // cookies()는 Promise를 반환하므로, cookieStore를 먼저 가져와야 합니다.
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('session')?.value || '';
+
+    if (!sessionCookie) {
+        return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
+    }
+
+    try {
+        const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
+        return NextResponse.json({ isAuthenticated: true, user: decodedClaims }, { status: 200 });
+    } catch {
+        return NextResponse.json({ isAuthenticated: false, user: null }, { status: 200 });
+    }
 }
 
 // [DELETE] 로그아웃: 세션 쿠키 삭제
 export async function DELETE() {
   try {
-    // 쿠키를 삭제하기 위해 만료된 쿠키를 설정합니다.
     const response = NextResponse.json({ status: 'success', message: 'Signed out successfully.' }, { status: 200 });
     response.cookies.set('session', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      expires: new Date(0), // 과거 날짜로 설정하여 즉시 만료
-      path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        expires: new Date(0), // 과거 날짜로 설정하여 즉시 만료
+        path: '/',
     });
-    
     return response;
   } catch (error) {
     console.error('Sign out error:', error);
