@@ -40,7 +40,7 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
             setIsEligible(false);
             setErrorMessage('이미 1년 이내에 평가를 제출하셨습니다. 내년에 다시 시도해주세요.');
           }
-        } catch (err) { // 사용하지 않는 error 변수 이름 변경
+        } catch { // 사용하지 않는 err 변수 제거
           setIsEligible(false);
           setErrorMessage('평가 자격을 확인하는 중 오류가 발생했습니다.');
         }
