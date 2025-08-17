@@ -5,7 +5,8 @@ import { useEffect } from 'react';
 
 declare global {
   interface Window {
-    adsbygoogle: any;
+    // any 대신 unknown[] 타입 사용
+    adsbygoogle: unknown[];
   }
 }
 
@@ -16,14 +17,14 @@ const AdsenseBanner = () => {
   useEffect(() => {
     try {
       if (window.adsbygoogle) {
-        window.adsbygoogle.push({});
+        // 타입 단언을 통해 push가 존재한다고 가정
+        (window.adsbygoogle as { push: (obj: object) => void }[]).push({});
       }
     } catch (err) {
       console.error('Adsense error:', err);
     }
   }, []);
 
-  // 실제 운영 환경이 아닐 경우, 광고 대신 플레이스홀더를 보여줍니다.
   if (process.env.NODE_ENV !== 'production' || !ADSENSE_CLIENT_ID || !ADSENSE_AD_SLOT) {
     return (
       <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded-md">
