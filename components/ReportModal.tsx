@@ -40,7 +40,7 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
             setIsEligible(false);
             setErrorMessage('이미 1년 이내에 평가를 제출하셨습니다. 내년에 다시 시도해주세요.');
           }
-        } catch (error) {
+        } catch (err) { // 사용하지 않는 error 변수 이름 변경
           setIsEligible(false);
           setErrorMessage('평가 자격을 확인하는 중 오류가 발생했습니다.');
         }
@@ -79,7 +79,7 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
       onClose();
       setScore(3);
       setSelectedNoiseTypes([]);
-    } catch (error) { // any 타입 제거
+    } catch (error) {
       if (error instanceof Error) {
         setErrorMessage(error.message || '평가 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
       } else {
@@ -154,7 +154,7 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+              className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
             >
               {isLoading ? '제출 중...' : '평가 제출하기'}
             </button>
