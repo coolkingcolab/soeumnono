@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 // adsbygoogle의 정확한 타입 정의
 declare global {
   interface Window {
-    adsbygoogle?: { push: (obj: object) => void }[];
+    adsbygoogle?: object[]; // ✅ 여기를 수정!
   }
 }
 
@@ -16,7 +16,7 @@ const AdsenseBanner = () => {
 
   useEffect(() => {
     try {
-      // adsbygoogle가 배열임을 보장하고, ad request를 push하는 표준 방식
+      // adsbygoogle 배열 초기화 및 광고 요청
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
       console.error('Adsense error:', err);
