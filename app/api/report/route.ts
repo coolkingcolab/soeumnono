@@ -22,14 +22,15 @@ const db = getFirestore();
 const auth = getAuth();
 
 async function verifyUser(): Promise<string | null> {
-  const sessionCookie = cookies().get('session')?.value || '';
+  // Vercel 빌드 환경의 타입 추론 오류를 해결하기 위해 await 추가
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session')?.value || '';
   if (!sessionCookie) return null;
 
   try {
     const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
     return decodedClaims.uid;
-  } catch (error) {
-    console.error("Session verification error:", error);
+  } catch {
     return null;
   }
 }
@@ -63,7 +64,6 @@ export async function GET(request: NextRequest) {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     
-    // any 타입 대신 Timestamp 타입의 toDate() 메서드 사용
     const latestReportDate = (latestReport!.createdAt as Timestamp).toDate();
 
     if (latestReportDate > oneYearAgo) {
@@ -122,7 +122,6 @@ export async function POST(request: NextRequest) {
         
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        // any 타입 대신 Timestamp 타입의 toDate() 메서드 사용
         const latestReportDate = (latestReport!.createdAt as Timestamp).toDate();
 
         if (latestReportDate > oneYearAgo) {
