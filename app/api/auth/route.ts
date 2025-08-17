@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
 
 // [GET] 인증 상태 확인
 export async function GET() {
-    // cookies()는 Promise를 반환하므로, cookieStore를 먼저 가져와야 합니다.
-    const cookieStore = cookies();
+    // Vercel 빌드 환경의 타입 추론 오류를 해결하기 위해 await 추가
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session')?.value || '';
 
     if (!sessionCookie) {
