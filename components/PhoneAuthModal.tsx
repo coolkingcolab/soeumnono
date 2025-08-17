@@ -56,7 +56,6 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
       console.error('SMS 전송 오류:', error);
       setErrorMessage('인증번호 전송에 실패했습니다. 전화번호를 확인하거나 잠시 후 다시 시도해주세요.');
       window.recaptchaVerifier.render().then((widgetId) => {
-        // @ts-expect-error - grecaptcha is loaded from an external script and is not available in the global scope during compilation.
         window.grecaptcha.reset(widgetId);
       });
     } finally {
