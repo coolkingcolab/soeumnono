@@ -1,103 +1,95 @@
-import Image from "next/image";
+// /app/page.tsx
+'use client';
+
+import { useState } from 'react';
+
+// 컴포넌트 임포트 (실제 파일 생성 후 경로 확인 필요)
+import MapViewer from '@/components/MapViewer';
+import AddressSearch from '@/components/AddressSearch';
+import ReportList from '@/components/ReportList';
+import AverageScoreBox from '@/components/AverageScoreBox';
+import NoiseScoreLegend from '@/components/NoiseScoreLegend';
+import HeatmapToggle from '@/components/HeatmapToggle';
+import AdsenseBanner from '@/components/AdsenseBanner';
+import ReportModal from '@/components/ReportModal';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // 선택된 주소 상태 관리
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  // 평가 모달 표시 상태 관리
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  // 모달에 전달할 주소 정보
+  const [modalAddress, setModalAddress] = useState<string>('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // 주소 선택 시 호출될 핸들러
+  const handleAddressSelect = (address: string) => {
+    console.log('Selected Address:', address);
+    setSelectedAddress(address);
+  };
+
+  // 지도 클릭 시 평가 모달을 여는 핸들러
+  const handleMapClick = (address: string) => {
+    setModalAddress(address);
+    setIsModalOpen(true);
+  };
+
+  return (
+    <div className="w-full h-full">
+      {/* --- 상단 컨트롤 영역 --- */}
+      <div className="mb-4 p-4 bg-white rounded-lg shadow">
+        <h1 className="text-xl font-semibold mb-3">주소로 층간소음 정보 검색</h1>
+        <AddressSearch onAddressSelect={handleAddressSelect} />
+      </div>
+
+      {/* --- 메인 콘텐츠 영역 (지도 + 정보) --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* --- 왼쪽: 지도 및 관련 컨트롤 --- */}
+        <div className="lg:col-span-2 h-[60vh] lg:h-[75vh] bg-white rounded-lg shadow-lg overflow-hidden relative">
+          <MapViewer
+            selectedAddress={selectedAddress}
+            onMapClick={handleMapClick} // 지도 클릭 시 모달 열기
+          />
+          <div className="absolute top-4 right-4 z-10 bg-white p-2 rounded-md shadow-md">
+            <HeatmapToggle />
+          </div>
+          <div className="absolute bottom-4 left-4 z-10">
+            <NoiseScoreLegend />
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* --- 오른쪽: 평가 정보 및 광고 --- */}
+        <div className="flex flex-col gap-6">
+          <div className="p-4 bg-white rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-2">
+              {selectedAddress ? `"${selectedAddress}" 소음 정보` : '주소를 선택해주세요'}
+            </h2>
+            {selectedAddress && (
+              <>
+                <AverageScoreBox address={selectedAddress} />
+                <ReportList address={selectedAddress} />
+              </>
+            )}
+            {!selectedAddress && (
+              <p className="text-gray-500 text-sm">
+                지도에서 건물을 클릭하거나 주소를 검색하여<br/>
+                층간소음 정보를 확인하세요.
+              </p>
+            )}
+          </div>
+          
+          {/* 광고 배너 */}
+          <div className="p-4 bg-white rounded-lg shadow flex items-center justify-center h-full">
+             <AdsenseBanner />
+          </div>
+        </div>
+      </div>
+
+      {/* 평가 모달 */}
+      <ReportModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        address={modalAddress}
+      />
     </div>
   );
 }
