@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image'; // Image 컴포넌트 임포트
 import { auth } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -10,12 +11,12 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import PhoneAuthModal from './PhoneAuthModal'; // 새로 만들 모달 컴포넌트 임포트
+import PhoneAuthModal from './PhoneAuthModal';
 
 const AuthButton = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false); // 전화번호 모달 상태
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -63,9 +64,12 @@ const AuthButton = () => {
         {currentUser ? (
           <div className="flex items-center gap-3">
             {currentUser.photoURL && (
-              <img
+              // <img> 태그를 <Image> 컴포넌트로 교체
+              <Image
                 src={currentUser.photoURL}
                 alt={currentUser.displayName || 'User'}
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-full"
               />
             )}
@@ -88,7 +92,7 @@ const AuthButton = () => {
               Google 로그인
             </button>
             <button
-              onClick={() => setIsPhoneModalOpen(true)} // 전화번호 모달 열기
+              onClick={() => setIsPhoneModalOpen(true)}
               className="px-3 py-1.5 text-sm font-semibold text-white bg-gray-700 rounded-md hover:bg-gray-800 transition-colors"
             >
               전화번호 로그인
@@ -96,7 +100,6 @@ const AuthButton = () => {
           </div>
         )}
       </div>
-      {/* 전화번호 인증 모달 */}
       <PhoneAuthModal
         isOpen={isPhoneModalOpen}
         onClose={() => setIsPhoneModalOpen(false)}
