@@ -3,10 +3,10 @@
 
 import { useEffect } from 'react';
 
+// adsbygoogle의 정확한 타입 정의
 declare global {
   interface Window {
-    // any 대신 unknown[] 타입 사용
-    adsbygoogle: unknown[];
+    adsbygoogle?: { push: (obj: object) => void }[];
   }
 }
 
@@ -16,10 +16,8 @@ const AdsenseBanner = () => {
 
   useEffect(() => {
     try {
-      if (window.adsbygoogle) {
-        // 타입 단언을 통해 push가 존재한다고 가정
-        (window.adsbygoogle as { push: (obj: object) => void }[]).push({});
-      }
+      // adsbygoogle가 배열임을 보장하고, ad request를 push하는 표준 방식
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (err) {
       console.error('Adsense error:', err);
     }
