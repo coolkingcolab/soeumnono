@@ -9,6 +9,9 @@ declare global {
   interface Window {
     recaptchaVerifier: RecaptchaVerifier;
     confirmationResult: ConfirmationResult;
+    grecaptcha: {
+      reset: (widgetId: number) => void;
+    };
   }
 }
 
@@ -24,15 +27,12 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // reCAPTCHA 설정
   useEffect(() => {
     if (isOpen) {
       try {
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
           'size': 'invisible',
-          'callback': () => {
-            // reCAPTCHA가 해결되었을 때의 로직 (보통은 여기서 바로 전송)
-          },
+          'callback': () => {},
         });
         window.recaptchaVerifier.render();
       } catch (error) {
@@ -42,11 +42,9 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
     }
   }, [isOpen]);
 
-  // 인증 코드 전송 핸들러
   const handleSendCode = async () => {
     setIsLoading(true);
     setErrorMessage('');
-    // 대한민국 국가번호(+82)를 기본으로 하고, 사용자가 입력한 번호의 맨 앞 0을 제거
     const formattedPhoneNumber = '+82' + phoneNumber.substring(1);
 
     try {
@@ -57,17 +55,16 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
     } catch (error) {
       console.error('SMS 전송 오류:', error);
       setErrorMessage('인증번호 전송에 실패했습니다. 전화번호를 확인하거나 잠시 후 다시 시도해주세요.');
-      // reCAPTCHA 리셋
       window.recaptchaVerifier.render().then((widgetId) => {
-        // @ts-ignore
-        grecaptcha.reset(widgetId);
+        // @ts-ignore 대신 @ts-expect-error 사용
+        // @ts-expect-error - grecaptcha is loaded from external script
+        window.grecaptcha.reset(widgetId);
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 코드 확인 및 로그인 핸들러
   const handleVerifyCode = async () => {
     setIsLoading(true);
     setErrorMessage('');
@@ -76,14 +73,13 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
       const user = result.user;
       const idToken = await user.getIdToken();
 
-      // 서버에 세션 생성 요청
       await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
       });
       
-      onClose(); // 성공 시 모달 닫기
+      onClose();
     } catch (error) {
       console.error('코드 인증 오류:', error);
       setErrorMessage('인증 코드가 올바르지 않습니다.');
@@ -98,7 +94,6 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 relative">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-800">
-          {/* Close Icon */}
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -148,8 +143,6 @@ const PhoneAuthModal = ({ isOpen, onClose }: PhoneAuthModalProps) => {
         )}
 
         {errorMessage && <p className="text-red-500 text-sm mt-4 text-center">{errorMessage}</p>}
-
-        {/* reCAPTCHA가 렌더링될 보이지 않는 컨테이너 */}
         <div id="recaptcha-container"></div>
       </div>
     </div>
