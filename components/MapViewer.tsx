@@ -3,10 +3,61 @@
 
 import { useEffect, useRef } from 'react';
 
-// Naver Maps API에서 사용하는 타입들을 전역으로 선언
+// Naver Maps API 타입 정의
+interface NaverMap {
+  new (element: HTMLElement, options: NaverMapOptions): NaverMapInstance;
+}
+interface NaverMapInstance {
+  setCenter: (latlng: NaverLatLng) => void;
+  setZoom: (zoom: number) => void;
+}
+interface NaverMapOptions {
+  center: NaverLatLng;
+  zoom: number;
+}
+interface NaverLatLng {
+  new (lat: number, lng: number): NaverLatLng;
+}
+interface NaverMarker {
+    new (options: { position: NaverLatLng; map: NaverMapInstance }): void;
+}
+interface NaverService {
+  reverseGeocode: (
+    options: { coords: NaverLatLng; orders: string },
+    callback: (status: number, response: ReverseGeocodeResponse) => void
+  ) => void;
+  geocode: (
+    options: { query: string },
+    callback: (status: number, response: GeocodeResponse) => void
+  ) => void;
+  OrderType: { ADDR: string; ROAD_ADDR: string };
+  Status: { OK: number };
+}
+interface ReverseGeocodeResponse {
+  v2: {
+    address: { roadAddress: string };
+    results: { land: { name: string } }[];
+  };
+}
+interface GeocodeResponse {
+  v2: {
+    addresses: { x: string; y: string }[];
+  };
+}
+
 declare global {
   interface Window {
-    naver: any;
+    naver: {
+      maps: {
+        Map: NaverMap;
+        LatLng: NaverLatLng;
+        Marker: NaverMarker;
+        Event: {
+          addListener: (map: NaverMapInstance, event: string, handler: (e: { coord: NaverLatLng }) => void) => void;
+        };
+        Service: NaverService;
+      };
+    };
   }
 }
 
@@ -17,9 +68,8 @@ interface MapViewerProps {
 
 const MapViewer = ({ selectedAddress, onMapClick }: MapViewerProps) => {
   const mapElement = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null); // naver.maps.Map 인스턴스를 저장할 ref
+  const mapRef = useRef<NaverMapInstance | null>(null);
 
-  // 네이버 지도 스크립트를 동적으로 로드하는 함수
   const loadNaverMapsScript = () => {
     return new Promise<void>((resolve, reject) => {
       if (document.getElementById('naver-maps-script')) {
@@ -28,7 +78,6 @@ const MapViewer = ({ selectedAddress, onMapClick }: MapViewerProps) => {
       }
       const script = document.createElement('script');
       script.id = 'naver-maps-script';
-      // TODO: .env.local 파일에 NEXT_PUBLIC_NAVER_MAP_CLIENT_ID를 설정해야 합니다.
       script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
       script.async = true;
       script.defer = true;
@@ -38,40 +87,34 @@ const MapViewer = ({ selectedAddress, onMapClick }: MapViewerProps) => {
     });
   };
 
-  // 1. 컴포넌트 마운트 시 지도 초기화
   useEffect(() => {
     loadNaverMapsScript().then(() => {
       if (!mapElement.current || !window.naver) return;
 
       const mapOptions = {
-        center: new window.naver.maps.LatLng(37.5665, 126.9780), // 기본 위치: 서울 시청
+        center: new window.naver.maps.LatLng(37.5665, 126.9780),
         zoom: 16,
       };
 
       const map = new window.naver.maps.Map(mapElement.current, mapOptions);
       mapRef.current = map;
 
-      // 지도 클릭 이벤트 리스너 추가
-      window.naver.maps.Event.addListener(map, 'click', (e: any) => {
+      window.naver.maps.Event.addListener(map, 'click', (e) => {
         const latlng = e.coord;
         
-        // 클릭한 위치의 좌표를 주소로 변환 (Reverse Geocoding)
         window.naver.maps.Service.reverseGeocode({
           coords: latlng,
           orders: [
-            window.naver.maps.Service.OrderType.ADDR, // 도로명 주소
-            window.naver.maps.Service.OrderType.ROAD_ADDR, // 지번 주소
+            window.naver.maps.Service.OrderType.ADDR,
+            window.naver.maps.Service.OrderType.ROAD_ADDR,
           ].join(','),
-        }, (status: any, response: any) => {
+        }, (status, response) => {
           if (status !== window.naver.maps.Service.Status.OK) {
             return alert('주소를 찾는 데 실패했습니다.');
           }
 
           const result = response.v2;
           const roadAddress = result.address.roadAddress;
-          
-          // 예: "서울특별시 중구 세종대로 110" + "상세 건물명"
-          // 실제 서비스에서는 건물명이 중요하므로, buildingName을 우선적으로 사용
           const buildingName = result.results[0]?.land?.name || '';
           const finalAddress = buildingName ? `${roadAddress} ${buildingName}` : roadAddress;
           
@@ -83,24 +126,21 @@ const MapViewer = ({ selectedAddress, onMapClick }: MapViewerProps) => {
     }).catch(console.error);
   }, [onMapClick]);
 
-  // 2. selectedAddress prop이 변경될 때 지도 위치 이동
   useEffect(() => {
     if (selectedAddress && mapRef.current && window.naver) {
-      // 주소를 좌표로 변환 (Geocoding)
       window.naver.maps.Service.geocode({
         query: selectedAddress,
-      }, (status: any, response: any) => {
+      }, (status, response) => {
         if (status !== window.naver.maps.Service.Status.OK) {
           return;
         }
 
         const result = response.v2.addresses[0];
         if (result) {
-          const point = new window.naver.maps.LatLng(result.y, result.x);
-          mapRef.current.setCenter(point);
-          mapRef.current.setZoom(17);
+          const point = new window.naver.maps.LatLng(Number(result.y), Number(result.x));
+          mapRef.current?.setCenter(point);
+          mapRef.current?.setZoom(17);
 
-          // 해당 위치에 마커 표시
           new window.naver.maps.Marker({
             position: point,
             map: mapRef.current,
