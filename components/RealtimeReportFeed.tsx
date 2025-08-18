@@ -5,23 +5,21 @@ import { useState, useEffect } from 'react';
 import { getLatestReports } from '@/lib/api';
 import { Report } from '@/types/report';
 
-// API로부터 받은 텍스트(JSON) 형식의 Timestamp 타입 정의
-interface SerializedTimestamp {
-  seconds: number;
-  nanoseconds: number;
-}
+// 두 가지 형식의 Timestamp를 모두 처리하도록 수정
+const timeAgo = (timestamp: any): string => {
+    // timestamp.seconds 또는 timestamp._seconds 값을 확인
+    const seconds = timestamp?.seconds ?? timestamp?._seconds;
 
-const timeAgo = (timestamp: SerializedTimestamp): string => {
-    if (!timestamp || typeof timestamp.seconds !== 'number') return '';
+    if (typeof seconds !== 'number') return '';
+    
     const now = new Date();
-    // .toDate() 대신 new Date()를 사용하여 초 단위 시간으로 날짜 객체 생성
-    const secondsPast = (now.getTime() - (timestamp.seconds * 1000)) / 1000;
+    const secondsPast = (now.getTime() - (seconds * 1000)) / 1000;
 
     if (secondsPast < 60) return `${Math.round(secondsPast)}초 전`;
     if (secondsPast < 3600) return `${Math.round(secondsPast / 60)}분 전`;
     if (secondsPast <= 86400) return `${Math.round(secondsPast / 3600)}시간 전`;
 
-    const day = new Date(timestamp.seconds * 1000);
+    const day = new Date(seconds * 1000);
     return `${day.getFullYear()}.${String(day.getMonth() + 1).padStart(2, '0')}.${String(day.getDate()).padStart(2, '0')}`;
 };
 
@@ -61,7 +59,7 @@ const RealtimeReportFeed = () => {
                         <li key={report.id} className="text-sm border-b border-gray-100 pb-2">
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold text-gray-700 truncate pr-2">{report.address}</span>
-                                <span className="text-xs text-gray-500 flex-shrink-0">{timeAgo(report.createdAt as unknown as SerializedTimestamp)}</span>
+                                <span className="text-xs text-gray-500 flex-shrink-0">{timeAgo(report.createdAt)}</span>
                             </div>
                             <div className="text-gray-600 mt-1">
                                 소음 점수: <span className="font-bold text-blue-600">{report.score}점</span>
