@@ -34,7 +34,9 @@ export default function Home() {
   return (
     <div className="w-full h-full space-y-6">
       <div className="p-4 bg-white rounded-lg shadow">
-        <h1 className="text-xl font-semibold mb-3 text-slate-800">주소로 층간소음 정보 검색</h1>
+        <h1 className="text-xl font-semibold mb-3 text-slate-800">
+          주소로 층간소음 정보 검색
+        </h1>
         <AddressSearch onAddressSelect={handleAddressSelect} />
       </div>
 
@@ -58,37 +60,49 @@ export default function Home() {
             </h2>
             {selectedAddress && (
               <>
-                <AverageScoreBox address={selectedAddress} refreshKey={refreshKey} />
-                <ReportList address={selectedAddress} refreshKey={refreshKey} />
+                <AverageScoreBox
+                  address={selectedAddress}
+                  refreshKey={refreshKey}
+                />
+                <ReportList
+                  address={selectedAddress}
+                  refreshKey={refreshKey}
+                />
               </>
             )}
             {!selectedAddress && (
               <div className="text-slate-500 text-sm space-y-3">
                 <p>
-                  지도에서 건물을 클릭하거나 주소를 검색하여<br/>
+                  지도에서 건물을 클릭하거나 주소를 검색하여
+                  <br />
                   층간소음 정보를 확인하세요.
                 </p>
                 {/* 평가 규칙 안내 문구 추가 */}
                 <p className="text-xs pt-3 border-t border-slate-200">
-                  * 최초 로그인 시 최대 5곳까지 평가할 수 있습니다.<br/>
-                  * 5곳을 모두 평가한 후에는 마지막 평가일로부터 6개월(180일)마다 1곳씩 추가 평가가 가능합니다.
+                  * 최초 로그인 시 최대 5곳까지 평가할 수 있습니다.
+                  <br />
+                  * 5곳을 모두 평가한 후에는 마지막 평가일로부터
+                  6개월(180일)마다 1곳씩 추가 평가가 가능합니다.
                 </p>
               </div>
             )}
           </div>
-          
+
           <RealtimeReportFeed />
-          <CoupangBanner />
           <AdsenseBanner />
         </div>
       </div>
 
+      {/* ReportModal */}
       <ReportModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         address={modalAddress}
         onSuccess={handleReportSuccess}
       />
+
+      {/* ✅ 푸터 바로 위 고정 쿠팡 배너 */}
+      <CoupangBanner />
     </div>
   );
 }
