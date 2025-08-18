@@ -2,7 +2,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
-import Link from 'next/link'; // Link 임포트
+import Link from 'next/link';
 import './globals.css';
 import MetaTags from '@/components/MetaTags';
 import AuthButton from '@/components/AuthButton';
@@ -29,9 +29,11 @@ export default function RootLayout({
         <MetaTags
           title="소음노노 - 우리 동네 층간소음 확인하기"
           description="지도 기반으로 우리 동네, 우리 아파트의 층간소음 정보를 확인하고 직접 평가를 남겨보세요."
-          url="https://soeumnono.com"
-          imageUrl="https://soeumnono.com/og-image.png"
+          url="https://www.soeumnono.com" // 실제 서비스 도메인으로 변경
+          imageUrl="https://www.soeumnono.com/og-image.png" // OG 이미지 경로
         />
+
+        {/* Google Analytics 스크립트 */}
         {GA_TRACKING_ID && (
           <>
             <Script
@@ -54,6 +56,10 @@ export default function RootLayout({
             />
           </>
         )}
+
+        {/* ========================================================== */}
+        {/* 요청하신 소유권 확인용 Google AdSense 스크립트가 여기 있습니다. */}
+        {/* ========================================================== */}
         {ADSENSE_CLIENT_ID && (
           <Script
             id="adsense-init"
@@ -70,7 +76,6 @@ export default function RootLayout({
             <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex items-center justify-between h-16">
                 <div className="flex-shrink-0">
-                  {/* <a> 태그를 <Link>로 변경 */}
                   <Link href="/" className="text-2xl font-bold text-blue-600">
                     소음노노
                   </Link>
@@ -81,9 +86,11 @@ export default function RootLayout({
               </div>
             </nav>
           </header>
+
           <main className="flex-grow container mx-auto p-4 sm:p-6 lg:p-8">
             {children}
           </main>
+
           <footer className="bg-white border-t">
             <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
               <p>&copy; {new Date().getFullYear()} Soeumnono. All rights reserved.</p>
