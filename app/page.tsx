@@ -19,10 +19,7 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAddressSelect = (address: string) => {
-    // --- 지도 이동 문제 진단을 위한 코드 ---
-    console.log("검색된 주소:", address); // 브라우저 콘솔에 이 메시지가 뜨는지 확인
     setSelectedAddress(address);
-    // --- 진단 코드 끝 ---
   };
 
   const handleMapClick = (address: string) => {
@@ -37,7 +34,8 @@ export default function Home() {
   return (
     <div className="w-full h-full">
       <div className="mb-4 p-4 bg-white rounded-lg shadow">
-        <h1 className="text-xl font-semibold mb-3">주소로 층간소음 정보 검색</h1>
+        {/* 색상 변경: text-slate-800 추가 */}
+        <h1 className="text-xl font-semibold mb-3 text-slate-800">주소로 층간소음 정보 검색</h1>
         <AddressSearch onAddressSelect={handleAddressSelect} />
       </div>
 
@@ -57,7 +55,8 @@ export default function Home() {
 
         <div className="flex flex-col gap-6">
           <div className="p-4 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-2">
+            {/* 색상 변경: text-slate-800 추가 */}
+            <h2 className="text-lg font-semibold mb-2 text-slate-800">
               {selectedAddress ? `"${selectedAddress}" 소음 정보` : '주소를 선택해주세요'}
             </h2>
             {selectedAddress && (
@@ -67,7 +66,8 @@ export default function Home() {
               </>
             )}
             {!selectedAddress && (
-              <p className="text-gray-500 text-sm">
+              // 색상 변경: text-gray-500 -> text-slate-500
+              <p className="text-slate-500 text-sm">
                 지도에서 건물을 클릭하거나 주소를 검색하여<br/>
                 층간소음 정보를 확인하세요.
               </p>
