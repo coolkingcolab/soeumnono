@@ -10,7 +10,7 @@ import AdsenseBanner from '@/components/AdsenseBanner';
 import ReportModal from '@/components/ReportModal';
 import RealtimeReportFeed from '@/components/RealtimeReportFeed';
 import RankingList from '@/components/RankingList';
-import CoupangBanner from '@/components/CoupangBanner'; // 새로 만든 쿠팡 배너 컴포넌트 임포트
+import CoupangBanner from '@/components/CoupangBanner';
 
 export default function Home() {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
@@ -38,6 +38,11 @@ export default function Home() {
         <AddressSearch onAddressSelect={handleAddressSelect} />
       </div>
 
+      {/* 랭킹 리스트를 검색창 아래로 이동 */}
+      <div className="w-full">
+        <RankingList />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 h-[50vh] lg:h-[60vh] bg-white rounded-lg shadow-lg overflow-hidden relative">
           <MapViewer
@@ -58,26 +63,24 @@ export default function Home() {
               </>
             )}
             {!selectedAddress && (
-              <p className="text-slate-500 text-sm">
-                지도에서 건물을 클릭하거나 주소를 검색하여<br/>
-                층간소음 정보를 확인하세요.
-              </p>
+              <div className="text-slate-500 text-sm space-y-3">
+                <p>
+                  지도에서 건물을 클릭하거나 주소를 검색하여<br/>
+                  층간소음 정보를 확인하세요.
+                </p>
+                {/* 평가 규칙 안내 문구 추가 */}
+                <p className="text-xs pt-3 border-t border-slate-200">
+                  * 최초 로그인 시 최대 5곳까지 평가할 수 있습니다.<br/>
+                  * 5곳을 모두 평가한 후에는 마지막 평가일로부터 6개월(180일)마다 1곳씩 추가 평가가 가능합니다.
+                </p>
+              </div>
             )}
           </div>
           
           <RealtimeReportFeed />
-
-          {/* 새로 만든 쿠팡 배너 컴포넌트를 여기에 추가 */}
           <CoupangBanner />
-
-          <div className="p-4 bg-white rounded-lg shadow flex items-center justify-center h-full">
-             <AdsenseBanner />
-          </div>
+          <AdsenseBanner />
         </div>
-      </div>
-
-      <div className="w-full">
-        <RankingList />
       </div>
 
       <ReportModal
