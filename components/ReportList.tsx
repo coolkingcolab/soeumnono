@@ -8,6 +8,7 @@ import { Timestamp } from 'firebase/firestore';
 
 interface ReportListProps {
   address: string;
+  refreshKey: number; // refreshKey prop 타입 추가
 }
 
 const formatDate = (timestamp: Timestamp): string => {
@@ -18,7 +19,7 @@ const formatDate = (timestamp: Timestamp): string => {
   return date.toISOString().split('T')[0];
 };
 
-const ReportList = ({ address }: ReportListProps) => {
+const ReportList = ({ address, refreshKey }: ReportListProps) => {
   const [reports, setReports] = useState<Omit<Report, 'uid'>[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ const ReportList = ({ address }: ReportListProps) => {
     };
 
     fetchReports();
-  }, [address]);
+  }, [address, refreshKey]); // 의존성 배열에 refreshKey 추가
 
   if (isLoading) {
     return (
