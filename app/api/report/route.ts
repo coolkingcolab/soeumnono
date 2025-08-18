@@ -37,7 +37,8 @@ async function verifyUser(): Promise<string | null> {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
-  const checkEligibility = search_params.get('checkEligibility');
+  // 오타 수정: search_params -> searchParams
+  const checkEligibility = searchParams.get('checkEligibility');
 
   if (checkEligibility === 'true') {
     const uid = await verifyUser();
