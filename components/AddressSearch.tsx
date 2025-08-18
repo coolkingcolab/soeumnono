@@ -1,7 +1,7 @@
 // /components/AddressSearch.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface AddressSearchProps {
   onAddressSelect: (address: string) => void;
@@ -9,32 +9,89 @@ interface AddressSearchProps {
 
 const AddressSearch = ({ onAddressSelect }: AddressSearchProps) => {
   const [inputValue, setInputValue] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      onAddressSelect(inputValue.trim());
-    } else {
-      alert('검색할 주소를 입력해주세요.');
+  useEffect(() => {
+    if (inputValue.length < 2) {
+      setSuggestions([]);
+      return;
     }
+
+    const handler = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/address?keyword=${inputValue}`);
+        const data = await response.json();
+        if (data.addresses) {
+          setSuggestions(data.addresses);
+        }
+      } catch (error) {
+        console.error('Failed to fetch address suggestions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setSuggestions([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleSuggestionClick = (address: string) => {
+    setInputValue(address);
+    onAddressSelect(address);
+    setSuggestions([]);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        placeholder="예: 래미안아파트 101동"
-        className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out"
-      />
-      <button
-        type="submit"
-        className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
-      >
-        검색
-      </button>
-    </form>
+    <div className="relative" ref={searchContainerRef}>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          // placeholder 텍스트 수정
+          placeholder="건물, 아파트, 도로명주소 검색"
+          className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+        />
+        <button
+            type="button"
+            onClick={() => onAddressSelect(inputValue)}
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
+        >
+            검색
+        </button>
+      </div>
+      
+      {suggestions.length > 0 && (
+        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-y-auto">
+          {suggestions.map((address, index) => (
+            <li
+              key={index}
+              onClick={() => handleSuggestionClick(address)}
+              className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+            >
+              {address}
+            </li>
+          ))}
+        </ul>
+      )}
+       {isLoading && <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg p-4 text-center">검색 중...</div>}
+    </div>
   );
 };
 
