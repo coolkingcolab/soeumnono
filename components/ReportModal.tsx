@@ -11,9 +11,10 @@ interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   address: string;
+  onSuccess: () => void; // 성공 콜백 함수 타입 추가
 }
 
-const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
+const ReportModal = ({ isOpen, onClose, address, onSuccess }: ReportModalProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [score, setScore] = useState<number>(3);
   const [selectedNoiseTypes, setSelectedNoiseTypes] = useState<string[]>([]);
@@ -38,9 +39,9 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
             setIsEligible(true);
           } else {
             setIsEligible(false);
-            setErrorMessage('이미 1년 이내에 평가를 제출하셨습니다. 내년에 다시 시도해주세요.');
+            setErrorMessage(data.reason || '평가를 제출할 수 없습니다.');
           }
-        } catch { // 사용하지 않는 err 변수 제거
+        } catch {
           setIsEligible(false);
           setErrorMessage('평가 자격을 확인하는 중 오류가 발생했습니다.');
         }
@@ -57,13 +58,9 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
-      setErrorMessage('로그인이 필요합니다.');
+    if (!currentUser || !isEligible) {
+      setErrorMessage('평가를 제출할 수 없습니다.');
       return;
-    }
-    if (!isEligible) {
-        setErrorMessage('평가를 제출할 수 없습니다.');
-        return;
     }
     if (selectedNoiseTypes.length === 0) {
       setErrorMessage('소음 종류를 하나 이상 선택해주세요.');
@@ -77,11 +74,12 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
       await submitReport({ address, score, noiseTypes: selectedNoiseTypes });
       alert('평가가 성공적으로 등록되었습니다.');
       onClose();
+      onSuccess(); // 성공 콜백 호출
       setScore(3);
       setSelectedNoiseTypes([]);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || '평가 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        setErrorMessage(error.message || '평가 등록에 실패했습니다.');
       } else {
         setErrorMessage('알 수 없는 오류가 발생했습니다.');
       }
@@ -100,14 +98,11 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-
         <h2 className="text-xl font-bold mb-2">소음 평가하기</h2>
         <p className="text-sm text-gray-600 bg-gray-100 p-2 rounded-md mb-4 break-words">{address}</p>
-
         {!currentUser ? (
           <div className="text-center p-6 bg-yellow-50 rounded-lg">
             <p className="font-semibold text-yellow-800">로그인 후 평가를 남길 수 있습니다.</p>
-            <p className="text-sm text-yellow-700 mt-1">소중한 데이터는 익명으로 안전하게 관리됩니다.</p>
           </div>
         ) : !isEligible ? (
              <div className="text-center p-6 bg-red-50 rounded-lg">
@@ -119,43 +114,24 @@ const ReportModal = ({ isOpen, onClose, address }: ReportModalProps) => {
               <label className="block text-md font-medium text-gray-700 mb-2">소음 점수 (5점이 가장 심각)</label>
               <div className="flex items-center justify-between">
                 <span>1점</span>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={score}
-                  onChange={(e) => setScore(Number(e.target.value))}
-                  className="w-full mx-4"
-                />
+                <input type="range" min="1" max="5" value={score} onChange={(e) => setScore(Number(e.target.value))} className="w-full mx-4" />
                 <span>5점</span>
                 <span className="font-bold text-blue-600 ml-4 text-lg w-8 text-center">{score}</span>
               </div>
             </div>
-
             <div className="mb-6">
               <label className="block text-md font-medium text-gray-700 mb-2">주요 소음 종류 (중복 선택 가능)</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {noiseOptions.map((option) => (
                   <label key={option.id} className={`flex items-center p-2 border rounded-md cursor-pointer transition-colors ${selectedNoiseTypes.includes(option.label) ? 'bg-blue-100 border-blue-500' : 'border-gray-300'}`}>
-                    <input
-                      type="checkbox"
-                      checked={selectedNoiseTypes.includes(option.label)}
-                      onChange={() => handleNoiseTypeChange(option.label)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
+                    <input type="checkbox" checked={selectedNoiseTypes.includes(option.label)} onChange={() => handleNoiseTypeChange(option.label)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                     <span className="ml-2 text-sm text-gray-800">{option.label}</span>
                   </label>
                 ))}
               </div>
             </div>
-
             {errorMessage && <p className="text-red-500 text-sm mb-4 text-center">{errorMessage}</p>}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-            >
+            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400">
               {isLoading ? '제출 중...' : '평가 제출하기'}
             </button>
           </form>
