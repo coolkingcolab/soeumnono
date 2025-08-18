@@ -10,12 +10,13 @@ import NoiseScoreLegend from '@/components/NoiseScoreLegend';
 import HeatmapToggle from '@/components/HeatmapToggle';
 import AdsenseBanner from '@/components/AdsenseBanner';
 import ReportModal from '@/components/ReportModal';
+import RealtimeReportFeed from '@/components/RealtimeReportFeed'; // 새로 만든 컴포넌트 임포트
 
 export default function Home() {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAddress, setModalAddress] = useState<string>('');
-  const [refreshKey, setRefreshKey] = useState(0); // 새로고침을 위한 상태
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAddressSelect = (address: string) => {
     setSelectedAddress(address);
@@ -26,9 +27,8 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  // 평가 성공 시 호출될 함수
   const handleReportSuccess = () => {
-    setRefreshKey(prevKey => prevKey + 1); // refreshKey 값을 변경하여 자식 컴포넌트 리렌더링 유도
+    setRefreshKey(prevKey => prevKey + 1);
   };
 
   return (
@@ -59,7 +59,6 @@ export default function Home() {
             </h2>
             {selectedAddress && (
               <>
-                {/* refreshKey prop 전달 */}
                 <AverageScoreBox address={selectedAddress} refreshKey={refreshKey} />
                 <ReportList address={selectedAddress} refreshKey={refreshKey} />
               </>
@@ -72,6 +71,9 @@ export default function Home() {
             )}
           </div>
           
+          {/* 실시간 피드 컴포넌트 추가 */}
+          <RealtimeReportFeed />
+
           <div className="p-4 bg-white rounded-lg shadow flex items-center justify-center h-full">
              <AdsenseBanner />
           </div>
@@ -82,7 +84,7 @@ export default function Home() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         address={modalAddress}
-        onSuccess={handleReportSuccess} // 성공 콜백 함수 전달
+        onSuccess={handleReportSuccess}
       />
     </div>
   );
