@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         return normalizedDbAddress === normalizedSearch;
     });
 
-    // 사용하지 않는 uid 변수를 제거하고, map 안에서 바로 처리하도록 수정
+    // 사용하지 않는 uid 변수를 선언하지 않고 바로 처리하도록 수정
     const reportsToReturn = filteredReports.map(({ uid, ...rest }) => rest);
 
     return NextResponse.json(reportsToReturn);
