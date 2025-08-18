@@ -1,18 +1,27 @@
 // /app/api/report/summary/route.ts
 import { NextResponse } from 'next/server';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
+// 사용하지 않는 import 제거
 import { getFirestore } from 'firebase-admin/firestore';
 import { Report } from '@/types/report';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
-// Vercel의 서버 캐시를 사용하지 않도록 설정
+
 export const dynamic = 'force-dynamic';
-export const revalidate = 0; // 캐시 유효 시간을 0으로 설정
+export const revalidate = 0;
 
+// Firebase 초기화를 GET 함수 밖으로 빼서 한 번만 실행되도록 하고,
+// serviceAccount 변수가 사용되도록 수정
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount),
+  });
+}
 
 const db = getFirestore();
 
@@ -22,7 +31,7 @@ export interface ReportSummary {
   reportCount: number;
 }
 
-export async function GET() { // 사용하지 않는 request 파라미터 제거
+export async function GET() {
   try {
     const reportsRef = db.collection('reports');
     const snapshot = await reportsRef.get();
