@@ -5,9 +5,7 @@ import { useState, useEffect } from 'react';
 import { getLatestReports } from '@/lib/api';
 import { Report } from '@/types/report';
 
-// 두 가지 형식의 Timestamp를 모두 처리하도록 수정
 const timeAgo = (timestamp: any): string => {
-    // timestamp.seconds 또는 timestamp._seconds 값을 확인
     const seconds = timestamp?.seconds ?? timestamp?._seconds;
 
     if (typeof seconds !== 'number') return '';
@@ -48,21 +46,21 @@ const RealtimeReportFeed = () => {
 
     return (
         <div className="p-4 bg-white rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-3">실시간 등록 현황</h3>
+            <h3 className="text-lg font-semibold mb-3 text-slate-800">실시간 등록 현황</h3>
             {isLoading ? (
-                <div className="text-center text-gray-500">불러오는 중...</div>
+                <div className="text-center text-slate-500">불러오는 중...</div>
             ) : latestReports.length === 0 ? (
-                <div className="text-center text-gray-500">아직 등록된 평가가 없습니다.</div>
+                <div className="text-center text-slate-500">아직 등록된 평가가 없습니다.</div>
             ) : (
                 <ul className="space-y-3">
                     {latestReports.map(report => (
-                        <li key={report.id} className="text-sm border-b border-gray-100 pb-2">
+                        <li key={report.id} className="text-sm border-b border-slate-100 pb-2">
                             <div className="flex justify-between items-center">
-                                <span className="font-semibold text-gray-700 truncate pr-2">{report.address}</span>
-                                <span className="text-xs text-gray-500 flex-shrink-0">{timeAgo(report.createdAt)}</span>
+                                <span className="font-semibold text-slate-700 truncate pr-2">{report.address}</span>
+                                <span className="text-xs text-slate-500 flex-shrink-0">{timeAgo(report.createdAt)}</span>
                             </div>
-                            <div className="text-gray-600 mt-1">
-                                소음 점수: <span className="font-bold text-blue-600">{report.score}점</span>
+                            <div className="text-slate-600 mt-1">
+                                소음 점수: <span className="font-bold text-sky-600">{report.score}점</span>
                             </div>
                         </li>
                     ))}
