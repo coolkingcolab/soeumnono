@@ -10,9 +10,13 @@ interface ReportListProps {
   refreshKey: number;
 }
 
-// 두 가지 형식의 Timestamp를 모두 처리하도록 수정
+interface SerializedTimestamp {
+  seconds: number;
+  nanoseconds: number;
+  _seconds?: number; // _seconds도 처리하기 위한 타입 추가
+}
+
 const formatDate = (timestamp: any): string => {
-  // timestamp.seconds 또는 timestamp._seconds 값을 확인
   const seconds = timestamp?.seconds ?? timestamp?._seconds;
 
   if (typeof seconds !== 'number') {
@@ -35,7 +39,6 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
       setError(null);
       try {
         const data = await getReports(address);
-        // 정렬 로직도 두 가지 경우를 모두 고려하도록 수정
         data.sort((a, b) => {
             const secondsA = (a.createdAt as any)?.seconds ?? (a.createdAt as any)?._seconds ?? 0;
             const secondsB = (b.createdAt as any)?.seconds ?? (b.createdAt as any)?._seconds ?? 0;
@@ -74,21 +77,21 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
   return (
     <div className="mt-4 space-y-3 max-h-96 overflow-y-auto pr-2">
       {reports.map((report) => (
-        <div key={report.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <div key={report.id} className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
           <div className="flex justify-between items-start">
             <div>
-              <p className="font-semibold">
-                소음 점수: <span className="text-blue-600 font-bold">{report.score}점</span>
+              <p className="font-semibold text-slate-800">
+                소음 점수: <span className="font-bold text-sky-600">{report.score}점</span>
               </p>
               <div className="flex flex-wrap gap-1 mt-1">
                 {report.noiseTypes.map((type) => (
-                  <span key={type} className="px-2 py-0.5 text-xs text-gray-700 bg-gray-200 rounded-full">
+                  <span key={type} className="px-2 py-0.5 text-xs text-slate-600 bg-slate-200 rounded-full">
                     {type}
                   </span>
                 ))}
               </div>
             </div>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt)}</span>
+            <span className="text-xs text-slate-500 flex-shrink-0 ml-2">{formatDate(report.createdAt)}</span>
           </div>
         </div>
       ))}
