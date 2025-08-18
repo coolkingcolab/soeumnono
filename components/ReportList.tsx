@@ -4,18 +4,24 @@
 import { useState, useEffect } from 'react';
 import { getReports } from '@/lib/api';
 import { Report } from '@/types/report';
-import { Timestamp } from 'firebase/firestore';
 
 interface ReportListProps {
   address: string;
-  refreshKey: number; // refreshKey prop 타입 추가
+  refreshKey: number;
 }
 
-const formatDate = (timestamp: Timestamp): string => {
-  if (!timestamp || !timestamp.seconds) {
+// API로부터 받은 텍스트(JSON) 형식의 Timestamp 타입 정의
+interface SerializedTimestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
+const formatDate = (timestamp: SerializedTimestamp): string => {
+  if (!timestamp || typeof timestamp.seconds !== 'number') {
     return '날짜 정보 없음';
   }
-  const date = timestamp.toDate();
+  // .toDate() 대신 new Date()를 사용하여 초 단위 시간으로 날짜 객체 생성
+  const date = new Date(timestamp.seconds * 1000);
   return date.toISOString().split('T')[0];
 };
 
@@ -32,7 +38,11 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
       setError(null);
       try {
         const data = await getReports(address);
-        data.sort((a, b) => (b.createdAt as Timestamp).seconds - (a.createdAt as Timestamp).seconds);
+        // createdAt 타입이 다르므로 정렬 방식 수정
+        data.sort((a, b) => 
+            (b.createdAt as unknown as SerializedTimestamp).seconds - 
+            (a.createdAt as unknown as SerializedTimestamp).seconds
+        );
         setReports(data);
       } catch (err) {
         setError('평가 목록을 불러오는 데 실패했습니다.');
@@ -43,7 +53,7 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
     };
 
     fetchReports();
-  }, [address, refreshKey]); // 의존성 배열에 refreshKey 추가
+  }, [address, refreshKey]);
 
   if (isLoading) {
     return (
@@ -80,7 +90,7 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
                 ))}
               </div>
             </div>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt as Timestamp)}</span>
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt as unknown as SerializedTimestamp)}</span>
           </div>
         </div>
       ))}
