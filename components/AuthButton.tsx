@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image'; // Image 컴포넌트 임포트
+import Image from 'next/image';
 import { auth } from '@/lib/firebase';
 import {
   onAuthStateChanged,
@@ -64,7 +64,6 @@ const AuthButton = () => {
         {currentUser ? (
           <div className="flex items-center gap-3">
             {currentUser.photoURL && (
-              // <img> 태그를 <Image> 컴포넌트로 교체
               <Image
                 src={currentUser.photoURL}
                 alt={currentUser.displayName || 'User'}
@@ -73,7 +72,8 @@ const AuthButton = () => {
                 className="w-8 h-8 rounded-full"
               />
             )}
-            <span className="text-sm font-medium hidden sm:block">
+            {/* 사용자 이름 텍스트 색상을 text-slate-900으로 변경 */}
+            <span className="text-sm font-medium hidden sm:block text-slate-900">
               {currentUser.displayName || currentUser.phoneNumber}
             </span>
             <button
