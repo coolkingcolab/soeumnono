@@ -1,21 +1,18 @@
 // /app/api/report/summary/route.ts
-
 import { NextResponse } from 'next/server';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { Report } from '@/types/report';
+
+// Vercel의 서버 캐시를 사용하지 않도록 설정
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // 캐시 유효 시간을 0으로 설정
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
-
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
-}
 
 const db = getFirestore();
 
