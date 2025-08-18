@@ -4,19 +4,24 @@
 import { useState, useEffect } from 'react';
 import { getLatestReports } from '@/lib/api';
 import { Report } from '@/types/report';
-import { Timestamp } from 'firebase/firestore';
 
-// Firestore Timestamp를 "방금 전", "5분 전" 등으로 변환하는 함수
-const timeAgo = (timestamp: Timestamp): string => {
-    if (!timestamp) return '';
+// API로부터 받은 텍스트(JSON) 형식의 Timestamp 타입 정의
+interface SerializedTimestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
+const timeAgo = (timestamp: SerializedTimestamp): string => {
+    if (!timestamp || typeof timestamp.seconds !== 'number') return '';
     const now = new Date();
-    const secondsPast = (now.getTime() - timestamp.toDate().getTime()) / 1000;
+    // .toDate() 대신 new Date()를 사용하여 초 단위 시간으로 날짜 객체 생성
+    const secondsPast = (now.getTime() - (timestamp.seconds * 1000)) / 1000;
 
     if (secondsPast < 60) return `${Math.round(secondsPast)}초 전`;
     if (secondsPast < 3600) return `${Math.round(secondsPast / 60)}분 전`;
     if (secondsPast <= 86400) return `${Math.round(secondsPast / 3600)}시간 전`;
 
-    const day = timestamp.toDate();
+    const day = new Date(timestamp.seconds * 1000);
     return `${day.getFullYear()}.${String(day.getMonth() + 1).padStart(2, '0')}.${String(day.getDate()).padStart(2, '0')}`;
 };
 
@@ -37,10 +42,10 @@ const RealtimeReportFeed = () => {
             }
         };
 
-        fetchAndSetReports(); // 처음 한 번 즉시 실행
-        const interval = setInterval(fetchAndSetReports, 20000); // 20초마다 데이터 새로고침
+        fetchAndSetReports();
+        const interval = setInterval(fetchAndSetReports, 20000);
 
-        return () => clearInterval(interval); // 컴포넌트가 사라질 때 인터벌 정리
+        return () => clearInterval(interval);
     }, []);
 
     return (
@@ -56,7 +61,7 @@ const RealtimeReportFeed = () => {
                         <li key={report.id} className="text-sm border-b border-gray-100 pb-2">
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold text-gray-700 truncate pr-2">{report.address}</span>
-                                <span className="text-xs text-gray-500 flex-shrink-0">{timeAgo(report.createdAt as Timestamp)}</span>
+                                <span className="text-xs text-gray-500 flex-shrink-0">{timeAgo(report.createdAt as unknown as SerializedTimestamp)}</span>
                             </div>
                             <div className="text-gray-600 mt-1">
                                 소음 점수: <span className="font-bold text-blue-600">{report.score}점</span>
