@@ -6,6 +6,7 @@ import { Report } from '@/types/report';
 
 // Vercel의 서버 캐시를 사용하지 않도록 설정
 export const dynamic = 'force-dynamic';
+export const revalidate = 0; // 캐시 유효 시간을 0으로 설정
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
