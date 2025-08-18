@@ -34,10 +34,10 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
+// GET: 평가 가능 여부 확인
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
-  // 오타 수정: search_params -> searchParams
   const checkEligibility = searchParams.get('checkEligibility');
 
   if (checkEligibility === 'true') {
@@ -46,20 +46,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // --- 테스트 사용자 예외 처리 ---
     if (uid === process.env.TEST_USER_UID) {
-      console.log('Test user detected, skipping eligibility check.');
       return NextResponse.json({ eligible: true });
     }
-    // --- 테스트 사용자 예외 처리 끝 ---
 
     const reportsRef = db.collection('reports');
     const querySnapshot = await reportsRef.where('uid', '==', uid).get();
+    const reportCount = querySnapshot.size;
 
-    if (querySnapshot.empty) {
-      return NextResponse.json({ eligible: true });
+    // 최초 5회까지는 언제나 평가 가능
+    if (reportCount < 5) {
+      return NextResponse.json({ eligible: true, reason: `Initial reports allowed: ${reportCount}/5` });
     }
 
+    // 5회 이상 평가한 경우, 마지막 평가로부터 6개월(180일)이 지났는지 확인
     let latestReport: Report | null = null;
     querySnapshot.forEach(doc => {
         const data = doc.data() as Report;
@@ -68,16 +68,15 @@ export async function GET(request: NextRequest) {
         }
     });
 
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-    
-    const latestReportDate = (latestReport!.createdAt as Timestamp).toDate();
+    const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000; // 180일
+    const lastReportTime = (latestReport!.createdAt as Timestamp).toMillis();
+    const now = new Date().getTime();
 
-    if (latestReportDate > oneYearAgo) {
-      return NextResponse.json({ eligible: false, reason: 'A report has been submitted within the last year.' });
+    if (now - lastReportTime > sixMonthsInMillis) {
+      return NextResponse.json({ eligible: true });
+    } else {
+      return NextResponse.json({ eligible: false, reason: 'You can submit a new report every 6 months after the initial 5 reports.' });
     }
-
-    return NextResponse.json({ eligible: true });
   }
 
   if (address) {
@@ -102,6 +101,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ error: 'Invalid request. Provide "address" or "checkEligibility".' }, { status: 400 });
 }
 
+// POST: 새로운 평가 등록
 export async function POST(request: NextRequest) {
   const uid = await verifyUser();
   if (!uid) {
@@ -114,14 +114,16 @@ export async function POST(request: NextRequest) {
     if (!address || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
-
-    // --- 테스트 사용자 예외 처리 ---
+    
     const isTestUser = uid === process.env.TEST_USER_UID;
+
+    // 테스트 유저가 아닐 경우에만 평가 제한 규칙 적용
     if (!isTestUser) {
         const reportsRef = db.collection('reports');
         const querySnapshot = await reportsRef.where('uid', '==', uid).get();
-        
-        if (!querySnapshot.empty) {
+        const reportCount = querySnapshot.size;
+
+        if (reportCount >= 5) {
             let latestReport: Report | null = null;
             querySnapshot.forEach(doc => {
                 const data = doc.data() as Report;
@@ -129,17 +131,16 @@ export async function POST(request: NextRequest) {
                     latestReport = data;
                 }
             });
-            
-            const oneYearAgo = new Date();
-            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-            const latestReportDate = (latestReport!.createdAt as Timestamp).toDate();
 
-            if (latestReportDate > oneYearAgo) {
-                return NextResponse.json({ error: 'You can only submit one report per year.' }, { status: 429 });
+            const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000; // 180일
+            const lastReportTime = (latestReport!.createdAt as Timestamp).toMillis();
+            const now = new Date().getTime();
+
+            if (now - lastReportTime <= sixMonthsInMillis) {
+                return NextResponse.json({ error: '6개월마다 한 번만 평가를 등록할 수 있습니다.' }, { status: 429 });
             }
         }
     }
-    // --- 테스트 사용자 예외 처리 끝 ---
 
     const newReport: Omit<Report, 'id'> = {
       uid,
