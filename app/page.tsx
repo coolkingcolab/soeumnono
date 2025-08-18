@@ -10,7 +10,7 @@ import NoiseScoreLegend from '@/components/NoiseScoreLegend';
 import HeatmapToggle from '@/components/HeatmapToggle';
 import AdsenseBanner from '@/components/AdsenseBanner';
 import ReportModal from '@/components/ReportModal';
-import RealtimeReportFeed from '@/components/RealtimeReportFeed'; // 새로 만든 컴포넌트 임포트
+import RealtimeReportFeed from '@/components/RealtimeReportFeed';
 
 export default function Home() {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
@@ -19,7 +19,10 @@ export default function Home() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleAddressSelect = (address: string) => {
+    // --- 지도 이동 문제 진단을 위한 코드 ---
+    console.log("검색된 주소:", address); // 브라우저 콘솔에 이 메시지가 뜨는지 확인
     setSelectedAddress(address);
+    // --- 진단 코드 끝 ---
   };
 
   const handleMapClick = (address: string) => {
@@ -71,7 +74,6 @@ export default function Home() {
             )}
           </div>
           
-          {/* 실시간 피드 컴포넌트 추가 */}
           <RealtimeReportFeed />
 
           <div className="p-4 bg-white rounded-lg shadow flex items-center justify-center h-full">
