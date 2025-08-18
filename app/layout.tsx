@@ -26,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <meta name="google-adsense-account" content="ca-pub-6441987229366820">
         <MetaTags
           title="소음노노 - 우리 동네 층간소음 확인하기"
           description="지도 기반으로 우리 동네, 우리 아파트의 층간소음 정보를 확인하고 직접 평가를 남겨보세요."
