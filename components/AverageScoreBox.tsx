@@ -6,9 +6,10 @@ import { getReports } from '@/lib/api';
 
 interface AverageScoreBoxProps {
   address: string;
+  refreshKey: number; // refreshKey prop 타입 추가
 }
 
-const AverageScoreBox = ({ address }: AverageScoreBoxProps) => {
+const AverageScoreBox = ({ address, refreshKey }: AverageScoreBoxProps) => {
   const [averageScore, setAverageScore] = useState<number | null>(null);
   const [reportCount, setReportCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +39,7 @@ const AverageScoreBox = ({ address }: AverageScoreBoxProps) => {
     };
 
     fetchAndCalculateAverage();
-  }, [address]);
+  }, [address, refreshKey]); // 의존성 배열에 refreshKey 추가
 
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'bg-gray-200';
