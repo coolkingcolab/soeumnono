@@ -5,7 +5,13 @@ import { useState, useEffect } from 'react';
 import { getLatestReports } from '@/lib/api';
 import { Report } from '@/types/report';
 
-const timeAgo = (timestamp: any): string => {
+// API로부터 받은 텍스트(JSON) 형식의 Timestamp 타입 정의
+interface SerializedTimestamp {
+  seconds?: number;
+  _seconds?: number;
+}
+
+const timeAgo = (timestamp: SerializedTimestamp): string => {
     const seconds = timestamp?.seconds ?? timestamp?._seconds;
 
     if (typeof seconds !== 'number') return '';
@@ -57,7 +63,7 @@ const RealtimeReportFeed = () => {
                         <li key={report.id} className="text-sm border-b border-slate-100 pb-2">
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold text-slate-700 truncate pr-2">{report.address}</span>
-                                <span className="text-xs text-slate-500 flex-shrink-0">{timeAgo(report.createdAt)}</span>
+                                <span className="text-xs text-slate-500 flex-shrink-0">{timeAgo(report.createdAt as SerializedTimestamp)}</span>
                             </div>
                             <div className="text-slate-600 mt-1">
                                 소음 점수: <span className="font-bold text-sky-600">{report.score}점</span>
