@@ -10,13 +10,13 @@ interface ReportListProps {
   refreshKey: number;
 }
 
+// API로부터 받은 텍스트(JSON) 형식의 Timestamp 타입 정의
 interface SerializedTimestamp {
-  seconds: number;
-  nanoseconds: number;
-  _seconds?: number; // _seconds도 처리하기 위한 타입 추가
+  seconds?: number;
+  _seconds?: number;
 }
 
-const formatDate = (timestamp: any): string => {
+const formatDate = (timestamp: SerializedTimestamp): string => {
   const seconds = timestamp?.seconds ?? timestamp?._seconds;
 
   if (typeof seconds !== 'number') {
@@ -40,8 +40,8 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
       try {
         const data = await getReports(address);
         data.sort((a, b) => {
-            const secondsA = (a.createdAt as any)?.seconds ?? (a.createdAt as any)?._seconds ?? 0;
-            const secondsB = (b.createdAt as any)?.seconds ?? (b.createdAt as any)?._seconds ?? 0;
+            const secondsA = (a.createdAt as SerializedTimestamp)?.seconds ?? (a.createdAt as SerializedTimestamp)?._seconds ?? 0;
+            const secondsB = (b.createdAt as SerializedTimestamp)?.seconds ?? (b.createdAt as SerializedTimestamp)?._seconds ?? 0;
             return secondsB - secondsA;
         });
         setReports(data);
@@ -91,7 +91,7 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
                 ))}
               </div>
             </div>
-            <span className="text-xs text-slate-500 flex-shrink-0 ml-2">{formatDate(report.createdAt)}</span>
+            <span className="text-xs text-slate-500 flex-shrink-0 ml-2">{formatDate(report.createdAt as SerializedTimestamp)}</span>
           </div>
         </div>
       ))}
