@@ -6,9 +6,8 @@ import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Report } from '@/types/report';
 
-// Vercel의 서버 캐시를 사용하지 않도록 설정 (중복)
 export const dynamic = 'force-dynamic';
-export const revalidate = 0; // 캐시 유효 시간을 0으로 설정하여 항상 최신 데이터 요청
+export const revalidate = 0;
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
@@ -38,32 +37,20 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// GET: 평가 가능 여부 확인
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
   const checkEligibility = searchParams.get('checkEligibility');
 
   if (checkEligibility === 'true') {
+    // ... (평가 자격 확인 로직은 이전과 동일)
     const uid = await verifyUser();
-    if (!uid) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    if (uid === process.env.TEST_USER_UID) {
-      return NextResponse.json({ eligible: true });
-    }
-
+    if (!uid) return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    if (uid === process.env.TEST_USER_UID) return NextResponse.json({ eligible: true });
     const reportsRef = db.collection('reports');
     const querySnapshot = await reportsRef.where('uid', '==', uid).get();
     const reportCount = querySnapshot.size;
-
-    // 최초 5회까지는 언제나 평가 가능
-    if (reportCount < 5) {
-      return NextResponse.json({ eligible: true, reason: `Initial reports allowed: ${reportCount}/5` });
-    }
-
-    // 5회 이상 평가한 경우, 마지막 평가로부터 6개월(180일)이 지났는지 확인
+    if (reportCount < 5) return NextResponse.json({ eligible: true, reason: `Initial reports allowed: ${reportCount}/5` });
     let latestReport: Report | null = null;
     querySnapshot.forEach(doc => {
         const data = doc.data() as Report;
@@ -71,11 +58,9 @@ export async function GET(request: NextRequest) {
             latestReport = data;
         }
     });
-
-    const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000; // 180일
+    const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000;
     const lastReportTime = (latestReport!.createdAt as Timestamp).toMillis();
     const now = new Date().getTime();
-
     if (now - lastReportTime > sixMonthsInMillis) {
       return NextResponse.json({ eligible: true });
     } else {
@@ -84,6 +69,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (address) {
+    // --- 검색 로직을 '정확히 일치'로 되돌림 ---
     const reportsRef = db.collection('reports');
     const querySnapshot = await reportsRef.where('address', '==', address).get();
     
@@ -100,12 +86,13 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(reports);
+    // --- 검색 로직 수정 끝 ---
   }
 
   return NextResponse.json({ error: 'Invalid request. Provide "address" or "checkEligibility".' }, { status: 400 });
 }
 
-// POST: 새로운 평가 등록
+// ... (POST 함수는 이전과 동일)
 export async function POST(request: NextRequest) {
   const uid = await verifyUser();
   if (!uid) {
@@ -121,7 +108,6 @@ export async function POST(request: NextRequest) {
     
     const isTestUser = uid === process.env.TEST_USER_UID;
 
-    // 테스트 유저가 아닐 경우에만 평가 제한 규칙 적용
     if (!isTestUser) {
         const reportsRef = db.collection('reports');
         const querySnapshot = await reportsRef.where('uid', '==', uid).get();
@@ -136,7 +122,7 @@ export async function POST(request: NextRequest) {
                 }
             });
 
-            const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000; // 180일
+            const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000;
             const lastReportTime = (latestReport!.createdAt as Timestamp).toMillis();
             const now = new Date().getTime();
 
