@@ -6,7 +6,7 @@ import { getReports } from '@/lib/api';
 
 interface AverageScoreBoxProps {
   address: string;
-  refreshKey: number; // refreshKey prop 타입 추가
+  refreshKey: number;
 }
 
 const AverageScoreBox = ({ address, refreshKey }: AverageScoreBoxProps) => {
@@ -39,15 +39,16 @@ const AverageScoreBox = ({ address, refreshKey }: AverageScoreBoxProps) => {
     };
 
     fetchAndCalculateAverage();
-  }, [address, refreshKey]); // 의존성 배열에 refreshKey 추가
+  }, [address, refreshKey]);
 
+  // 가독성 좋은 색상으로 변경
   const getScoreColor = (score: number | null) => {
-    if (score === null) return 'bg-gray-200';
-    if (score < 2) return 'bg-blue-500';
-    if (score < 3) return 'bg-green-500';
-    if (score < 4) return 'bg-yellow-400';
-    if (score < 4.5) return 'bg-orange-500';
-    return 'bg-red-600';
+    if (score === null) return 'bg-slate-200 text-slate-800'; // 데이터 없을 때
+    if (score < 2) return 'bg-sky-500 text-white'; // 조용함
+    if (score < 3) return 'bg-emerald-500 text-white'; // 약간의 소음
+    if (score < 4) return 'bg-amber-500 text-white'; // 보통
+    if (score < 4.5) return 'bg-orange-500 text-white'; // 시끄러움
+    return 'bg-red-600 text-white'; // 매우 심각
   };
 
   if (isLoading) {
@@ -60,12 +61,12 @@ const AverageScoreBox = ({ address, refreshKey }: AverageScoreBoxProps) => {
   }
 
   return (
-    <div className={`p-4 rounded-lg mb-4 text-white shadow ${getScoreColor(averageScore)}`}>
+    <div className={`p-4 rounded-lg mb-4 shadow-md transition-colors duration-300 ${getScoreColor(averageScore)}`}>
       <h3 className="text-md font-semibold opacity-90">평균 소음 점수 (총 {reportCount}건)</h3>
       {averageScore !== null ? (
         <p className="text-4xl font-bold mt-1">{averageScore.toFixed(1)}<span className="text-2xl font-normal opacity-80"> / 5</span></p>
       ) : (
-        <p className="text-lg font-medium mt-2 text-gray-800">데이터 없음</p>
+        <p className="text-lg font-medium mt-2">데이터 없음</p>
       )}
     </div>
   );
