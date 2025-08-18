@@ -64,9 +64,9 @@ const AddressSearch = ({ onAddressSelect }: AddressSearchProps) => {
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          // placeholder 텍스트 수정
           placeholder="건물, 아파트, 도로명주소 검색"
-          className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+          // placeholder-slate-700 클래스를 추가하여 텍스트 색상을 진하게 변경
+          className="flex-grow w-full px-4 py-2 border border-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-slate-700"
         />
         <button
             type="button"
