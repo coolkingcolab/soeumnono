@@ -10,18 +10,15 @@ interface ReportListProps {
   refreshKey: number;
 }
 
-// API로부터 받은 텍스트(JSON) 형식의 Timestamp 타입 정의
-interface SerializedTimestamp {
-  seconds: number;
-  nanoseconds: number;
-}
+// 두 가지 형식의 Timestamp를 모두 처리하도록 수정
+const formatDate = (timestamp: any): string => {
+  // timestamp.seconds 또는 timestamp._seconds 값을 확인
+  const seconds = timestamp?.seconds ?? timestamp?._seconds;
 
-const formatDate = (timestamp: SerializedTimestamp): string => {
-  if (!timestamp || typeof timestamp.seconds !== 'number') {
+  if (typeof seconds !== 'number') {
     return '날짜 정보 없음';
   }
-  // .toDate() 대신 new Date()를 사용하여 초 단위 시간으로 날짜 객체 생성
-  const date = new Date(timestamp.seconds * 1000);
+  const date = new Date(seconds * 1000);
   return date.toISOString().split('T')[0];
 };
 
@@ -38,11 +35,12 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
       setError(null);
       try {
         const data = await getReports(address);
-        // createdAt 타입이 다르므로 정렬 방식 수정
-        data.sort((a, b) => 
-            (b.createdAt as unknown as SerializedTimestamp).seconds - 
-            (a.createdAt as unknown as SerializedTimestamp).seconds
-        );
+        // 정렬 로직도 두 가지 경우를 모두 고려하도록 수정
+        data.sort((a, b) => {
+            const secondsA = (a.createdAt as any)?.seconds ?? (a.createdAt as any)?._seconds ?? 0;
+            const secondsB = (b.createdAt as any)?.seconds ?? (b.createdAt as any)?._seconds ?? 0;
+            return secondsB - secondsA;
+        });
         setReports(data);
       } catch (err) {
         setError('평가 목록을 불러오는 데 실패했습니다.');
@@ -90,7 +88,7 @@ const ReportList = ({ address, refreshKey }: ReportListProps) => {
                 ))}
               </div>
             </div>
-            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt as unknown as SerializedTimestamp)}</span>
+            <span className="text-xs text-gray-500 flex-shrink-0 ml-2">{formatDate(report.createdAt)}</span>
           </div>
         </div>
       ))}
