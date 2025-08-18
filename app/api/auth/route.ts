@@ -1,15 +1,18 @@
 // /app/api/auth/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
+
+// Vercel의 서버 캐시를 사용하지 않도록 설정
+export const dynamic = 'force-dynamic';
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
+
 
 if (!getApps().length) {
   initializeApp({
