@@ -6,7 +6,6 @@ import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Report } from '@/types/report';
 
-// .replace()를 다시 추가하여 로컬과 Vercel 환경 모두 호환되도록 수정
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -38,13 +37,20 @@ async function verifyUser(): Promise<string | null> {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
-  const checkEligibility = searchParams.get('checkEligibility');
+  const checkEligibility = search_params.get('checkEligibility');
 
   if (checkEligibility === 'true') {
     const uid = await verifyUser();
     if (!uid) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+
+    // --- 테스트 사용자 예외 처리 ---
+    if (uid === process.env.TEST_USER_UID) {
+      console.log('Test user detected, skipping eligibility check.');
+      return NextResponse.json({ eligible: true });
+    }
+    // --- 테스트 사용자 예외 처리 끝 ---
 
     const reportsRef = db.collection('reports');
     const querySnapshot = await reportsRef.where('uid', '==', uid).get();
@@ -108,26 +114,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
 
-    const reportsRef = db.collection('reports');
-    const querySnapshot = await reportsRef.where('uid', '==', uid).get();
-    
-    if (!querySnapshot.empty) {
-        let latestReport: Report | null = null;
-        querySnapshot.forEach(doc => {
-            const data = doc.data() as Report;
-            if (!latestReport || (data.createdAt as Timestamp).toMillis() > (latestReport.createdAt as Timestamp).toMillis()) {
-                latestReport = data;
-            }
-        });
+    // --- 테스트 사용자 예외 처리 ---
+    const isTestUser = uid === process.env.TEST_USER_UID;
+    if (!isTestUser) {
+        const reportsRef = db.collection('reports');
+        const querySnapshot = await reportsRef.where('uid', '==', uid).get();
         
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-        const latestReportDate = (latestReport!.createdAt as Timestamp).toDate();
+        if (!querySnapshot.empty) {
+            let latestReport: Report | null = null;
+            querySnapshot.forEach(doc => {
+                const data = doc.data() as Report;
+                if (!latestReport || (data.createdAt as Timestamp).toMillis() > (latestReport.createdAt as Timestamp).toMillis()) {
+                    latestReport = data;
+                }
+            });
+            
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+            const latestReportDate = (latestReport!.createdAt as Timestamp).toDate();
 
-        if (latestReportDate > oneYearAgo) {
-            return NextResponse.json({ error: 'You can only submit one report per year.' }, { status: 429 });
+            if (latestReportDate > oneYearAgo) {
+                return NextResponse.json({ error: 'You can only submit one report per year.' }, { status: 429 });
+            }
         }
     }
+    // --- 테스트 사용자 예외 처리 끝 ---
 
     const newReport: Omit<Report, 'id'> = {
       uid,
