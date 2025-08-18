@@ -6,6 +6,9 @@ import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Report } from '@/types/report';
 
+// Vercel의 서버 캐시를 사용하지 않도록 설정
+export const dynamic = 'force-dynamic';
+
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
