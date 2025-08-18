@@ -97,6 +97,10 @@ export default function RootLayout({
               <p className="mt-2">
                 본 서비스는 사용자가 제공한 데이터를 기반으로 하며, 정보의 정확성에 대해 보증하지 않습니다.
               </p>
+              {/* 쿠팡 파트너스 대가성 문구 추가 */}
+              <p className="mt-2 text-xs">
+                쿠팡파트너스 배너는 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+              </p>
             </div>
           </footer>
         </div>
