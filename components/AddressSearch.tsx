@@ -14,7 +14,7 @@ const AddressSearch = ({ onAddressSelect }: AddressSearchProps) => {
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (inputValue.length < 2) {
+    if (inputValue.trim().length < 2) {
       setSuggestions([]);
       return;
     }
@@ -32,7 +32,7 @@ const AddressSearch = ({ onAddressSelect }: AddressSearchProps) => {
       } finally {
         setIsLoading(false);
       }
-    }, 500);
+    }, 300);
 
     return () => {
       clearTimeout(handler);
@@ -59,38 +59,34 @@ const AddressSearch = ({ onAddressSelect }: AddressSearchProps) => {
 
   return (
     <div className="relative" ref={searchContainerRef}>
-      <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex items-center">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="건물, 아파트, 도로명주소 검색"
-          // placeholder-slate-700 클래스를 추가하여 텍스트 색상을 진하게 변경
-          className="flex-grow w-full px-4 py-2 border border-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-slate-700"
+          placeholder="건물, 아파트, 도로명주소로 검색"
+          // text-slate-900 클래스를 추가하여 입력 텍스트 색상을 진하게 변경
+          className="flex-grow w-full px-4 py-2 border border-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out placeholder-slate-700 text-slate-900"
         />
-        <button
-            type="button"
-            onClick={() => onAddressSelect(inputValue)}
-            className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out shadow-sm"
-        >
-            검색
-        </button>
       </div>
       
-      {suggestions.length > 0 && (
+      {(isLoading || suggestions.length > 0) && (
         <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-y-auto">
-          {suggestions.map((address, index) => (
-            <li
-              key={index}
-              onClick={() => handleSuggestionClick(address)}
-              className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-            >
-              {address}
-            </li>
-          ))}
+          {isLoading ? (
+            <li className="px-4 py-2 text-slate-500">검색 중...</li>
+          ) : (
+            suggestions.map((address, index) => (
+              <li
+                key={index}
+                onClick={() => handleSuggestionClick(address)}
+                className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+              >
+                {address}
+              </li>
+            ))
+          )}
         </ul>
       )}
-       {isLoading && <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg p-4 text-center">검색 중...</div>}
     </div>
   );
 };
