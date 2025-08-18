@@ -11,7 +11,8 @@ const AddressSearch = ({ onAddressSelect }: AddressSearchProps) => {
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
+  // ref의 타입을 HTMLDivElement에서 HTMLFormElement로 수정
+  const searchContainerRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (inputValue.trim().length < 2) {
