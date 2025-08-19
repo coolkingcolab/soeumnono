@@ -5,16 +5,18 @@ import { useState, useEffect, FormEvent } from 'react';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { noiseOptions } from '@/constants/noiseOptions';
-import { checkEligibility, submitReport } from '@/lib/api';
+import { checkEligibility, submitReport, updateReport } from '@/lib/api';
+import { Report } from '@/types/report';
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   address: string;
-  onSuccess: () => void; // 성공 콜백 함수 타입 추가
+  onSuccess: () => void;
+  reportToEdit?: Report | null; // 수정할 평가 데이터 (선택적)
 }
 
-const ReportModal = ({ isOpen, onClose, address, onSuccess }: ReportModalProps) => {
+const ReportModal = ({ isOpen, onClose, address, onSuccess, reportToEdit }: ReportModalProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [score, setScore] = useState<number>(3);
   const [selectedNoiseTypes, setSelectedNoiseTypes] = useState<string[]>([]);
@@ -22,33 +24,39 @@ const ReportModal = ({ isOpen, onClose, address, onSuccess }: ReportModalProps) 
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isEligible, setIsEligible] = useState(false);
 
+  const isEditMode = !!reportToEdit;
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
+    const unsubscribe = onAuthStateChanged(auth, (user) => setCurrentUser(user));
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (isOpen && currentUser) {
+    if (isOpen) {
       setErrorMessage('');
-      const verifyEligibility = async () => {
-        try {
-          const data = await checkEligibility();
-          if (data.eligible) {
-            setIsEligible(true);
-          } else {
-            setIsEligible(false);
-            setErrorMessage(data.reason || '평가를 제출할 수 없습니다.');
-          }
-        } catch {
-          setIsEligible(false);
-          setErrorMessage('평가 자격을 확인하는 중 오류가 발생했습니다.');
+      // 수정 모드일 경우, 기존 데이터로 상태 초기화
+      if (isEditMode && reportToEdit) {
+        setScore(reportToEdit.score);
+        setSelectedNoiseTypes(reportToEdit.noiseTypes);
+        setIsEligible(true); // 수정은 언제나 가능
+      } else {
+        // 새로 만들기 모드일 경우, 자격 확인 및 상태 초기화
+        setScore(3);
+        setSelectedNoiseTypes([]);
+        if (currentUser) {
+          checkEligibility()
+            .then(data => {
+              setIsEligible(data.eligible);
+              if (!data.eligible) setErrorMessage(data.reason || '평가를 제출할 수 없습니다.');
+            })
+            .catch(() => {
+              setIsEligible(false);
+              setErrorMessage('평가 자격을 확인하는 중 오류가 발생했습니다.');
+            });
         }
-      };
-      verifyEligibility();
+      }
     }
-  }, [isOpen, currentUser]);
+  }, [isOpen, currentUser, isEditMode, reportToEdit]);
 
   const handleNoiseTypeChange = (type: string) => {
     setSelectedNoiseTypes(prev =>
@@ -71,15 +79,20 @@ const ReportModal = ({ isOpen, onClose, address, onSuccess }: ReportModalProps) 
     setErrorMessage('');
 
     try {
-      await submitReport({ address, score, noiseTypes: selectedNoiseTypes });
-      alert('평가가 성공적으로 등록되었습니다.');
+      if (isEditMode && reportToEdit?.id) {
+        // 수정 모드
+        await updateReport(reportToEdit.id, { score, noiseTypes: selectedNoiseTypes });
+        alert('평가가 성공적으로 수정되었습니다.');
+      } else {
+        // 새로 만들기 모드
+        await submitReport({ address, score, noiseTypes: selectedNoiseTypes });
+        alert('평가가 성공적으로 등록되었습니다.');
+      }
       onClose();
-      onSuccess(); // 성공 콜백 호출
-      setScore(3);
-      setSelectedNoiseTypes([]);
+      onSuccess();
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message || '평가 등록에 실패했습니다.');
+        setErrorMessage(error.message || '작업에 실패했습니다.');
       } else {
         setErrorMessage('알 수 없는 오류가 발생했습니다.');
       }
@@ -98,7 +111,7 @@ const ReportModal = ({ isOpen, onClose, address, onSuccess }: ReportModalProps) 
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-xl font-bold mb-2">소음 평가하기</h2>
+        <h2 className="text-xl font-bold mb-2">{isEditMode ? '평가 수정하기' : '소음 평가하기'}</h2>
         <p className="text-sm text-gray-600 bg-gray-100 p-2 rounded-md mb-4 break-words">{address}</p>
         {!currentUser ? (
           <div className="text-center p-6 bg-yellow-50 rounded-lg">
@@ -132,7 +145,7 @@ const ReportModal = ({ isOpen, onClose, address, onSuccess }: ReportModalProps) 
             </div>
             {errorMessage && <p className="text-red-500 text-sm mb-4 text-center">{errorMessage}</p>}
             <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400">
-              {isLoading ? '제출 중...' : '평가 제출하기'}
+              {isLoading ? '저장 중...' : (isEditMode ? '수정 완료' : '평가 제출하기')}
             </button>
           </form>
         )}
