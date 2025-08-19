@@ -37,71 +37,32 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-export async function POST(request: NextRequest) {
-  const uid = await verifyUser();
-  if (!uid) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-
+// Geocoding 함수
+async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   try {
-    const { address, score, noiseTypes } = await request.json();
+    const response = await fetch(
+      `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_API_CLIENT_ID!,
+          'X-NCP-APIGW-API-KEY': process.env.NAVER_API_CLIENT_SECRET!,
+        },
+      }
+    );
 
-    if (!address || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
-      return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
-    }
+    const data = await response.json();
     
-    // --- Geocoding API 호출 및 디버깅 로그 추가 ---
-    let coords = {};
-    const geocodeUrl = `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`;
-    try {
-        const geoResponse = await fetch(geocodeUrl, {
-            method: 'GET',
-            headers: {
-                'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_API_CLIENT_ID || '',
-                'X-NCP-APIGW-API-KEY': process.env.NAVER_API_CLIENT_SECRET || ''
-            }
-        });
-        
-        // 응답 내용을 텍스트로 먼저 받아와서 로그로 확인
-        const responseText = await geoResponse.text();
-        console.log("Geocoding API 응답 상태:", geoResponse.status);
-        console.log("Geocoding API 응답 내용:", responseText);
-
-        const geoData = JSON.parse(responseText);
-
-        if (geoData.status === 'OK' && geoData.addresses.length > 0) {
-            coords = {
-                lat: parseFloat(geoData.addresses[0].y),
-                lng: parseFloat(geoData.addresses[0].x),
-            };
-        }
-    } catch (geoError) {
-        console.error('Geocoding fetch error:', geoError);
+    if (data.addresses && data.addresses.length > 0) {
+      const result = data.addresses[0];
+      return {
+        lat: parseFloat(result.y),
+        lng: parseFloat(result.x)
+      };
     }
-    // --- Geocoding 로직 끝 ---
-
-    const isTestUser = uid === process.env.TEST_USER_UID;
-
-    if (!isTestUser) {
-        // ... (평가 제한 규칙 로직은 이전과 동일)
-    }
-
-    const newReport: Omit<Report, 'id'> = {
-      uid,
-      address,
-      score,
-      noiseTypes,
-      createdAt: FieldValue.serverTimestamp(),
-      ...coords
-    };
-
-    const docRef = await db.collection('reports').add(newReport);
-
-    return NextResponse.json({ id: docRef.id, ...newReport }, { status: 201 });
-
+    return null;
   } catch (error) {
-    console.error('Error submitting report:', error);
-    return NextResponse.json({ error: 'Failed to submit report.' }, { status: 500 });
+    console.error('Geocoding error:', error);
+    return null;
   }
 }
 
