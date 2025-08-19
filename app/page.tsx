@@ -22,16 +22,12 @@ export default function Home() {
     setSelectedAddress(address);
   };
 
-  const handleMapClick = (address: string) => {
-    setModalAddress(address);
-    setIsModalOpen(true);
-  };
+  // 지도 클릭 기능이 없어졌으므로 handleMapClick 함수 제거
 
   const handleReportSuccess = () => {
     setRefreshKey(prevKey => prevKey + 1);
   };
-
-  // '평가하기' 버튼을 눌렀을 때 실행될 함수
+  
   const handleOpenModalForSelectedAddress = () => {
     if (selectedAddress) {
       setModalAddress(selectedAddress);
@@ -54,7 +50,7 @@ export default function Home() {
         <div className="lg:col-span-2 h-[50vh] lg:h-[60vh] bg-white rounded-lg shadow-lg overflow-hidden relative">
           <MapViewer
             selectedAddress={selectedAddress}
-            onMapClick={handleMapClick}
+            // onMapClick prop 제거
           />
         </div>
 
@@ -66,7 +62,6 @@ export default function Home() {
             {selectedAddress && (
               <>
                 <AverageScoreBox address={selectedAddress} refreshKey={refreshKey} />
-                {/* ReportList에 onRateClick 함수 전달 */}
                 <ReportList
                   address={selectedAddress}
                   refreshKey={refreshKey}
