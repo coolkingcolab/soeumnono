@@ -1,25 +1,15 @@
 // /app/api/report/my/route.ts
 import { NextResponse } from 'next/server';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore'; // Timestamp import 제거
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Report } from '@/types/report';
+import { db } from '@/lib/firebase-admin'; // 중앙 설정 파일에서 db 임포트
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-};
+// 이 파일의 자체적인 Firebase 초기화 코드 제거
 
-if (!getApps().length) {
-  initializeApp({ credential: cert(serviceAccount) });
-}
-
-const db = getFirestore();
 const auth = getAuth();
 
 async function verifyUser(): Promise<string | null> {
