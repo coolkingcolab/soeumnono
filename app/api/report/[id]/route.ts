@@ -32,6 +32,7 @@ async function verifyUser(): Promise<string | null> {
 }
 
 // PUT: 평가 수정
+// 함수의 두 번째 인자 타입을 올바르게 수정
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const uid = await verifyUser();
   if (!uid) {
@@ -53,7 +54,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    // 본인의 평가만 수정할 수 있도록 확인
     if (doc.data()?.uid !== uid) {
       return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
     }
