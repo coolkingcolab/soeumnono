@@ -62,10 +62,7 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 h-[50vh] lg:h-[60vh] bg-white rounded-lg shadow-lg overflow-hidden relative">
-          <MapViewer
-            selectedAddress={selectedAddress}
-            // onMapClick prop 제거
-          />
+          <MapViewer selectedAddress={selectedAddress} />
         </div>
 
         <div className="flex flex-col gap-6">
@@ -74,14 +71,11 @@ export default function Home() {
               {selectedAddress ? `"${selectedAddress}" 소음 정보` : '주소를 선택해주세요'}
             </h2>
             {selectedAddress && (
-              <>
-                <AverageScoreBox address={selectedAddress} refreshKey={refreshKey} />
-                <ReportList
-                  address={selectedAddress}
-                  refreshKey={refreshKey}
-                  onRateClick={handleOpenModalForSelectedAddress}
-                />
-              </>
+              <ReportList
+                address={selectedAddress}
+                refreshKey={refreshKey}
+                onRateClick={handleOpenModalForSelectedAddress}
+              />
             )}
             {!selectedAddress && (
               <div className="text-slate-500 text-sm space-y-3">
@@ -98,8 +92,7 @@ export default function Home() {
           </div>
           
           <RealtimeReportFeed />
-
-          {/* 나의 평가 기록 컴포넌트를 쿠팡 배너 위에 추가 */}
+          
           <MyReports refreshKey={refreshKey} onEditClick={handleEditClick} />
 
           <CoupangBanner />
@@ -109,10 +102,10 @@ export default function Home() {
 
       <ReportModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         address={modalAddress}
         onSuccess={handleReportSuccess}
-        reportToEdit={reportToEdit} // 수정할 데이터 전달
+        reportToEdit={reportToEdit}
       />
     </div>
   );
