@@ -50,10 +50,11 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
         },
       }
     );
+    
     console.log('API 응답 상태:', response.status);
     const data = await response.json();
     console.log('API 응답 데이터:', JSON.stringify(data, null, 2));
-
+    
     if (data.addresses && data.addresses.length > 0) {
       const result = data.addresses[0];
       const coords = {
@@ -71,11 +72,12 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
   }
 }
 
-
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const address = searchParams.get('address');
-  const checkEligibility = searchParams.get('checkEligibility');
+export async function GET() {
+  try {
+    console.log('=== Location API 호출 시작 ===');
+    const reportsRef = db.collection('reports');
+    const snapshot = await reportsRef.get();
+    console.log('총 문서 수:', snapshot.size);
 
   if (checkEligibility === 'true') {
     const uid = await verifyUser();
