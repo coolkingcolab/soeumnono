@@ -6,8 +6,6 @@ import { db } from '@/lib/firebase-admin'; // 중앙 설정 파일에서 db 임�
 
 export const dynamic = 'force-dynamic';
 
-// 이 파일의 자체적인 Firebase 초기화 코드 제거
-
 const auth = getAuth();
 
 async function verifyUser(): Promise<string | null> {
@@ -22,13 +20,14 @@ async function verifyUser(): Promise<string | null> {
 }
 
 // PUT: 평가 수정
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// 함수의 두 번째 인자 타입을 Vercel이 더 잘 인식할 수 있도록 수정
+export async function PUT(request: NextRequest, context: { params: { id: string } }) {
   const uid = await verifyUser();
   if (!uid) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = context.params; // context 객체에서 id를 추출
   const { score, noiseTypes } = await request.json();
 
   if (!id || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
