@@ -13,6 +13,7 @@ interface NaverMapInstance {
 type NaverLatLngInstance = object;
 interface NaverMarkerInstance {
     getElement: () => HTMLElement;
+    setMap: (map: NaverMapInstance | null) => void; // setMap 메서드 추가
 }
 
 type NaverMap = new (element: HTMLElement, options: { center: NaverLatLngInstance; zoom: number }) => NaverMapInstance;
