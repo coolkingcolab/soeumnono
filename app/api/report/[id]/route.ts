@@ -33,13 +33,13 @@ async function verifyUser(): Promise<string | null> {
 
 // PUT: 평가 수정
 // 함수의 두 번째 인자 타입을 올바르게 수정
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const uid = await verifyUser();
   if (!uid) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const { id } = await params; // await 추가
+  const { id } = params; // params는 Promise가 아니므로 await 제거
   const { score, noiseTypes } = await request.json();
 
   if (!id || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const reportRef = db.collection('reports').doc(id);
     const doc = await reportRef.get();
-    
+
     if (!doc.exists) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
@@ -59,6 +59,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     await reportRef.update({ score, noiseTypes });
+
     return NextResponse.json({ message: 'Report updated successfully' });
   } catch (error) {
     console.error('Error updating report:', error);
