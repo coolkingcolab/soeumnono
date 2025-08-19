@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 사용하지 않는 uid 변수를 선언하지 않고 바로 처리하도록 수정
-    const reportsToReturn = filteredReports.map(({ uid, ...rest }) => rest);
+    const reportsToReturn = filteredReports.map(({ uid: _, ...rest }) => rest);
 
     return NextResponse.json(reportsToReturn);
   }
