@@ -80,7 +80,8 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
       mapScript.onload = () => {
         const clusteringScript = document.createElement('script');
         clusteringScript.id = 'marker-clustering-script';
-        clusteringScript.src = 'https://navermaps.github.io/maps.js/src/marker-clustering.js';
+        // 스크립트 주소를 src(소스)가 아닌 dist(배포) 버전으로 수정
+        clusteringScript.src = 'https://navermaps.github.io/maps.js/dist/marker-clustering.js';
         clusteringScript.async = true;
         clusteringScript.defer = true;
         document.head.appendChild(clusteringScript);
