@@ -45,28 +45,24 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
     return null;
   }
   
+  // addInfoYn=Y 파라미터를 추가하여 좌표 정보 요청
   const apiUrl = `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${apiKey}&currentPage=1&countPerPage=1&keyword=${encodeURIComponent(
     address
-  )}&resultType=json`;
+  )}&resultType=json&addInfoYn=Y`;
 
   try {
     const response = await fetch(apiUrl);
-    
-    // --- 디버깅을 위한 로그 추가 ---
-    const responseText = await response.text();
-    console.log("주소 API 응답 상태:", response.status);
-    console.log("주소 API 응답 내용:", responseText);
-    // --- 디버깅 코드 끝 ---
-
-    const data = JSON.parse(responseText);
+    const data = await response.json();
     
     if (data.results?.juso && data.results.juso.length > 0) {
       const result = data.results.juso[0];
       // entY: 위도(latitude), entX: 경도(longitude)
-      return {
-        lat: parseFloat(result.entY),
-        lng: parseFloat(result.entX)
-      };
+      if (result.entY && result.entX) {
+        return {
+          lat: parseFloat(result.entY),
+          lng: parseFloat(result.entX)
+        };
+      }
     }
     return null;
   } catch (error) {
