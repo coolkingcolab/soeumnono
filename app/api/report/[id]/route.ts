@@ -2,10 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import { db } from '@/lib/firebase-admin'; // 중앙 설정 파일에서 db 임포트
+import { db } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
-
 const auth = getAuth();
 
 async function verifyUser(): Promise<string | null> {
@@ -19,15 +18,18 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// PUT: 평가 수정
-// 함수의 두 번째 인자 타입을 Vercel이 더 잘 인식할 수 있도록 수정
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+// ✅ 올바른 수정: params를 Promise<{ id: string }>로 타입 지정
+export async function PUT(
+  request: NextRequest, 
+  context: { params: Promise<{ id: string }> }  // Promise로 감싸야 함
+) {
   const uid = await verifyUser();
   if (!uid) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const { id } = context.params; // context 객체에서 id를 추출
+  // ✅ params를 await로 해결
+  const { id } = await context.params;  // await 추가 필수
   const { score, noiseTypes } = await request.json();
 
   if (!id || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
@@ -37,7 +39,7 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
   try {
     const reportRef = db.collection('reports').doc(id);
     const doc = await reportRef.get();
-
+    
     if (!doc.exists) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
@@ -47,7 +49,6 @@ export async function PUT(request: NextRequest, context: { params: { id: string 
     }
 
     await reportRef.update({ score, noiseTypes });
-
     return NextResponse.json({ message: 'Report updated successfully' });
   } catch (error) {
     console.error('Error updating report:', error);
