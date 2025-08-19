@@ -95,8 +95,10 @@ export async function GET(request: NextRequest) {
         return normalizedDbAddress === normalizedSearch;
     });
 
-    // 사용하지 않는 uid 변수를 선언하지 않고 바로 처리하도록 수정
-    const reportsToReturn = filteredReports.map(({ uid, ...rest }) => rest);
+    const reportsToReturn: Omit<Report, 'uid'>[] = filteredReports.map(report => {
+        const { uid, ...rest } = report;
+        return rest;
+    });
 
     return NextResponse.json(reportsToReturn);
   }
@@ -117,6 +119,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
     
+    // --- Geocoding API 호출하여 좌표 얻기 ---
+    let coords = {};
+    const geocodeUrl = `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`;
+    try {
+        const geoResponse = await fetch(geocodeUrl, {
+            method: 'GET',
+            headers: {
+                'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_API_CLIENT_ID || '',
+                'X-NCP-APIGW-API-KEY': process.env.NAVER_API_CLIENT_SECRET || ''
+            }
+        });
+        const geoData = await geoResponse.json();
+        if (geoData.status === 'OK' && geoData.addresses.length > 0) {
+            coords = {
+                lat: parseFloat(geoData.addresses[0].y),
+                lng: parseFloat(geoData.addresses[0].x),
+            };
+        }
+    } catch (geoError) {
+        console.error('Geocoding fetch error:', geoError);
+    }
+    // --- Geocoding 로직 끝 ---
+
     const isTestUser = uid === process.env.TEST_USER_UID;
 
     if (!isTestUser) {
@@ -149,6 +174,7 @@ export async function POST(request: NextRequest) {
       score,
       noiseTypes,
       createdAt: FieldValue.serverTimestamp(),
+      ...coords // 얻어온 좌표 정보 추가
     };
 
     const docRef = await db.collection('reports').add(newReport);
