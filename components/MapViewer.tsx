@@ -48,12 +48,14 @@ declare global {
           addListener: (map: NaverMapInstance, event: string, handler: (e?: object) => void) => void;
         };
         Service: NaverService;
-        // clustering 서브모듈 추가
-        clustering: {
+        // clustering 서브모듈은 선택적으로 존재할 수 있음
+        clustering?: {
           MarkerClustering: new (options: object) => void;
         };
       };
     };
+    // 전역 MarkerClustering도 지원
+    MarkerClustering?: new (options: object) => void;
   }
 }
 
@@ -67,30 +69,64 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
 
   const loadScripts = () => {
     return new Promise<void>((resolve, reject) => {
-      if (document.getElementById('naver-maps-script')) {
+      // 이미 로드되었는지 확인
+      if (window.naver && window.MarkerClustering) {
         resolve();
         return;
       }
-      
-      const mapScript = document.createElement('script');
-      mapScript.id = 'naver-maps-script';
-      // clustering 서브모듈을 포함하여 한 번에 로드
-      mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder,clustering`;
-      mapScript.async = true;
-      mapScript.defer = true;
-      document.head.appendChild(mapScript);
 
-      mapScript.onload = () => {
-        // clustering 모듈이 로드될 때까지 잠시 대기
+      // 1단계: 네이버 지도 기본 스크립트 로드
+      if (!document.getElementById('naver-maps-script')) {
+        const mapScript = document.createElement('script');
+        mapScript.id = 'naver-maps-script';
+        mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
+        mapScript.async = true;
+        document.head.appendChild(mapScript);
+
+        mapScript.onload = () => {
+          console.log('Naver Maps loaded');
+          // 2단계: 마커 클러스터링 스크립트 로드
+          loadClusteringScript().then(resolve).catch(reject);
+        };
+        mapScript.onerror = reject;
+      } else if (window.naver) {
+        // 지도는 로드되었지만 클러스터링이 없는 경우
+        loadClusteringScript().then(resolve).catch(reject);
+      }
+    });
+  };
+
+  const loadClusteringScript = () => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.MarkerClustering) {
+        resolve();
+        return;
+      }
+
+      const clusteringScript = document.createElement('script');
+      clusteringScript.id = 'marker-clustering-script';
+      // 네이버 공식 GitHub에서 직접 로드
+      clusteringScript.src = 'https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js';
+      clusteringScript.async = true;
+      document.head.appendChild(clusteringScript);
+
+      clusteringScript.onload = () => {
+        console.log('MarkerClustering loaded');
+        // 약간의 지연 후 확인
         setTimeout(() => {
-          if (window.naver?.maps?.clustering) {
+          if (window.MarkerClustering) {
             resolve();
           } else {
-            reject(new Error('Clustering module not loaded'));
+            console.warn('MarkerClustering not available after load');
+            resolve(); // 실패해도 지도는 표시
           }
         }, 100);
       };
-      mapScript.onerror = (error) => reject(error);
+
+      clusteringScript.onerror = (error) => {
+        console.warn('Clustering script failed to load:', error);
+        resolve(); // 실패해도 지도는 표시
+      };
     });
   };
 
@@ -113,9 +149,14 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
       mapRef.current = map;
 
       getReportLocations().then(locations => {
-        // clustering 모듈 사용 방법 수정
-        if (!window.naver.maps.clustering?.MarkerClustering || locations.length === 0) return;
+        console.log('Locations loaded:', locations.length);
+        
+        if (locations.length === 0) {
+          console.log('No locations to display');
+          return;
+        }
 
+        // 네이버 공식 문서 방식으로 마커 생성
         const markers = locations.map(loc => {
             return new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(loc.lat, loc.lng),
@@ -123,32 +164,64 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
                     content: `<div style="width:12px;height:12px;background-color:${getScoreColor(loc.score)};border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.4);"></div>`,
                     anchor: new window.naver.maps.Point(6, 6),
                 }
+                // map 설정하지 않음 - 클러스터링에서 관리
             });
         });
 
-        const clusterIcons = [
-            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#10b981;border-radius:50%;opacity:0.9;"></div>' },
-            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#f59e0b;border-radius:50%;opacity:0.9;"></div>' },
-            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#ef4444;border-radius:50%;opacity:0.9;"></div>' },
-        ].map(icon => ({ ...icon, size: new window.naver.maps.Size(40, 40), anchor: new window.naver.maps.Point(20, 20) }));
+        // 클러스터링 적용 (네이버 공식 문서 방식)
+        if (window.MarkerClustering) {
+          console.log('Applying MarkerClustering');
+          
+          // 네이버 공식 문서의 클러스터 아이콘 방식
+          const htmlMarker1 = {
+            content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#10b981;border-radius:50%;opacity:0.9;"></div>',
+            size: new window.naver.maps.Size(40, 40),
+            anchor: new window.naver.maps.Point(20, 20)
+          };
+          
+          const htmlMarker2 = {
+            content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#f59e0b;border-radius:50%;opacity:0.9;"></div>',
+            size: new window.naver.maps.Size(40, 40),
+            anchor: new window.naver.maps.Point(20, 20)
+          };
+          
+          const htmlMarker3 = {
+            content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#ef4444;border-radius:50%;opacity:0.9;"></div>',
+            size: new window.naver.maps.Size(40, 40),
+            anchor: new window.naver.maps.Point(20, 20)
+          };
 
-        new window.naver.maps.clustering.MarkerClustering({
-            minClusterSize: 2,
-            maxZoom: 15,
-            map: map,
-            markers: markers,
-            disableClickZoom: false,
-            gridSize: 120,
-            icons: clusterIcons,
-            indexGenerator: [10, 50, 100],
-            stylingFunction: (clusterMarker: NaverMarkerInstance, count: number) => {
-                const element = clusterMarker.getElement();
-                const firstChild = element.querySelector('div:first-child');
-                if (firstChild) {
-                    firstChild.textContent = String(count);
+          try {
+            // 네이버 공식 문서 방식으로 MarkerClustering 생성
+            const markerClustering = new window.MarkerClustering({
+                minClusterSize: 2,
+                maxZoom: 15,
+                map: map,
+                markers: markers,
+                disableClickZoom: false,
+                gridSize: 120,
+                icons: [htmlMarker1, htmlMarker2, htmlMarker3],
+                indexGenerator: [10, 50, 100],
+                stylingFunction: function(clusterMarker: any, count: number) {
+                    // jQuery 없이 vanilla JS로 구현
+                    const element = clusterMarker.getElement();
+                    const firstDiv = element.querySelector('div:first-child');
+                    if (firstDiv) {
+                        firstDiv.textContent = count.toString();
+                    }
                 }
-            }
-        });
+            });
+            console.log('MarkerClustering applied successfully');
+          } catch (error) {
+            console.warn('MarkerClustering failed, showing individual markers:', error);
+            // 클러스터링 실패 시 개별 마커 표시
+            markers.forEach(marker => marker.setMap(map));
+          }
+        } else {
+          console.log('MarkerClustering not available, showing individual markers');
+          // 클러스터링이 없으면 개별 마커 표시
+          markers.forEach(marker => marker.setMap(map));
+        }
       }).catch(console.error);
     }).catch(console.error);
   }, []);
