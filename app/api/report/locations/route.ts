@@ -1,13 +1,9 @@
-// /app/api/report/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+// /app/api/report/locations/route.ts
+import { NextResponse } from 'next/server';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
-import { Report } from '@/types/report';
+import { getFirestore } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
@@ -16,58 +12,47 @@ const serviceAccount = {
 };
 
 if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount),
-  });
+  initializeApp({ credential: cert(serviceAccount) });
 }
 
 const db = getFirestore();
-const auth = getAuth();
 
-async function verifyUser(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session')?.value || '';
-  if (!sessionCookie) return null;
-
-  try {
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    return decodedClaims.uid;
-  } catch {
+// 주소기반산업지원서비스 API 호출 함수
+async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
+  const apiKey = process.env.ROAD_NAME_API_KEY;
+  if (!apiKey) {
+    console.error('ROAD_NAME_API_KEY is not set');
     return null;
   }
-}
+  
+  const apiUrl = `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${apiKey}&currentPage=1&countPerPage=1&keyword=${encodeURIComponent(
+    address
+  )}&resultType=json&addInfoYn=Y`;
 
-// Geocoding 함수 수정 (URL 및 헤더)
-async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   try {
-    console.log('Geocoding 요청 주소:', address);
-    const response = await fetch(
-      `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          'x-ncp-apigw-api-key-id': process.env.NAVER_API_CLIENT_ID!,
-          'x-ncp-apigw-api-key': process.env.NAVER_API_CLIENT_SECRET!,
-        },
+    const response = await fetch(apiUrl);
+    
+    console.log("주소 API 응답 상태:", response.status);
+    const responseText = await response.text();
+    console.log("주소 API 응답 내용:", responseText);
+
+    const data = JSON.parse(responseText);
+    
+    if (data.results?.juso && data.results.juso.length > 0) {
+      const result = data.results.juso[0];
+      if (result.entY && result.entX) {
+        const coords = {
+          lat: parseFloat(result.entY),
+          lng: parseFloat(result.entX)
+        };
+        console.log('변환된 좌표:', coords);
+        return coords;
       }
-    );
-    
-    console.log('API 응답 상태:', response.status);
-    const data = await response.json();
-    console.log('API 응답 데이터:', JSON.stringify(data, null, 2));
-    
-    if (data.addresses && data.addresses.length > 0) {
-      const result = data.addresses[0];
-      const coords = {
-        lat: parseFloat(result.y),
-        lng: parseFloat(result.x)
-      };
-      console.log('변환된 좌표:', coords);
-      return coords;
     }
     console.log('geocoding 결과 없음');
     return null;
   } catch (error) {
-    console.error('Geocoding error:', error);
+    console.error('Geocoding error with juso.go.kr:', error);
     return null;
   }
 }
@@ -78,124 +63,49 @@ export async function GET() {
     const reportsRef = db.collection('reports');
     const snapshot = await reportsRef.get();
     console.log('총 문서 수:', snapshot.size);
-
-  if (checkEligibility === 'true') {
-    const uid = await verifyUser();
-    if (!uid) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    if (uid === process.env.TEST_USER_UID) {
-      return NextResponse.json({ eligible: true });
-    }
-
-    const reportsRef = db.collection('reports');
-    const querySnapshot = await reportsRef.where('uid', '==', uid).get();
-    const reportCount = querySnapshot.size;
-
-    if (reportCount < 5) {
-      return NextResponse.json({ eligible: true, reason: `Initial reports allowed: ${reportCount}/5` });
-    }
-
-    let latestReport: Report | null = null;
-    querySnapshot.forEach(doc => {
-        const data = doc.data() as Report;
-        if (!latestReport || (data.createdAt as Timestamp).toMillis() > (latestReport.createdAt as Timestamp).toMillis()) {
-            latestReport = data;
-        }
-    });
-
-    const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000;
-    const lastReportTime = (latestReport!.createdAt as Timestamp).toMillis();
-    const now = new Date().getTime();
-
-    if (now - lastReportTime > sixMonthsInMillis) {
-      return NextResponse.json({ eligible: true });
-    } else {
-      return NextResponse.json({ eligible: false, reason: 'You can submit a new report every 6 months after the initial 5 reports.' });
-    }
-  }
-
-  if (address) {
-    const reportsRef = db.collection('reports');
-    const querySnapshot = await reportsRef.get();
     
-    const allReports: Report[] = [];
-    querySnapshot.forEach(doc => {
-        allReports.push({ id: doc.id, ...doc.data() } as Report);
-    });
+    const locations: { lat: number; lng: number; score: number }[] = [];
 
-    const normalizedSearch = address.replace(/\s+/g, '');
-
-    const filteredReports = allReports.filter(report => {
-        const normalizedDbAddress = report.address.replace(/\s+/g, '');
-        return normalizedDbAddress === normalizedSearch;
-    });
-
-    const reportsToReturn = filteredReports.map(({ uid, ...rest }) => rest);
-
-    return NextResponse.json(reportsToReturn);
-  }
-
-  return NextResponse.json({ error: 'Invalid request. Provide "address" or "checkEligibility".' }, { status: 400 });
-}
-
-export async function POST(request: NextRequest) {
-  const uid = await verifyUser();
-  if (!uid) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-
-  try {
-    const { address, score, noiseTypes } = await request.json();
-
-    if (!address || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
-      return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
-    }
-
-    const coordinates = await geocodeAddress(address);
-    
-    const isTestUser = uid === process.env.TEST_USER_UID;
-
-    if (!isTestUser) {
-        const reportsRef = db.collection('reports');
-        const querySnapshot = await reportsRef.where('uid', '==', uid).get();
-        const reportCount = querySnapshot.size;
-
-        if (reportCount >= 5) {
-            let latestReport: Report | null = null;
-            querySnapshot.forEach(doc => {
-                const data = doc.data() as Report;
-                if (!latestReport || (data.createdAt as Timestamp).toMillis() > (latestReport.createdAt as Timestamp).toMillis()) {
-                    latestReport = data;
-                }
-            });
-
-            const sixMonthsInMillis = 180 * 24 * 60 * 60 * 1000;
-            const lastReportTime = (latestReport!.createdAt as Timestamp).toMillis();
-            const now = new Date().getTime();
-
-            if (now - lastReportTime <= sixMonthsInMillis) {
-                return NextResponse.json({ error: '6개월마다 한 번만 평가를 등록할 수 있습니다.' }, { status: 429 });
-            }
+    // 병렬로 geocoding 처리
+    const geocodePromises = snapshot.docs.map(async (doc, index) => {
+      const data = doc.data();
+      console.log(`문서 ${index + 1}:`, { address: data.address, hasLat: !!data.lat, hasLng: !!data.lng });
+      
+      // 이미 좌표가 있는 경우
+      if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+        console.log(`문서 ${index + 1}: 기존 좌표 사용`);
+        return { lat: data.lat, lng: data.lng, score: data.score };
+      }
+      
+      // 주소를 좌표로 변환
+      if (data.address) {
+        console.log(`문서 ${index + 1}: geocoding 시도 - ${data.address}`);
+        const coords = await geocodeAddress(data.address);
+        if (coords) {
+          console.log(`문서 ${index + 1}: geocoding 성공`);
+          return { ...coords, score: data.score };
+        } else {
+          console.log(`문서 ${index + 1}: geocoding 실패`);
         }
-    }
+      }
+      
+      return null;
+    });
 
-    const newReport: Omit<Report, 'id'> = {
-      uid,
-      address,
-      score,
-      noiseTypes,
-      createdAt: FieldValue.serverTimestamp(),
-      ...(coordinates && { lat: coordinates.lat, lng: coordinates.lng })
-    };
+    const results = await Promise.all(geocodePromises);
+    console.log('유효한 결과 수:', results.filter(r => r !== null).length);
+    
+    // null이 아닌 유효한 결과만 필터링
+    results.forEach(result => {
+      if (result) {
+        locations.push(result);
+      }
+    });
 
-    const docRef = await db.collection('reports').add(newReport);
-
-    return NextResponse.json({ id: docRef.id, ...newReport }, { status: 201 });
-
+    console.log('최종 locations 수:', locations.length);
+    return NextResponse.json(locations);
   } catch (error) {
-    console.error('Error submitting report:', error);
-    return NextResponse.json({ error: 'Failed to submit report.' }, { status: 500 });
+    console.error('Error fetching report locations:', error);
+    return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 });
   }
 }
