@@ -24,8 +24,8 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
       `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
       {
         headers: {
-          'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_MAP_CLIENT_ID!,
-          'X-NCP-APIGW-API-KEY': process.env.NAVER_MAP_CLIENT_SECRET!,
+          'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_API_CLIENT_ID!,
+          'X-NCP-APIGW-API-KEY': process.env.NAVER_API_CLIENT_SECRET!,
         },
       }
     );
