@@ -1,7 +1,7 @@
 // /components/MapViewer.tsx
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { getReportLocations } from '@/lib/api';
 
 // Naver Maps API 타입 정의
@@ -67,7 +67,7 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<NaverMapInstance | null>(null);
 
-  const loadScripts = () => {
+  const loadScripts = useCallback(() => {
     return new Promise<void>((resolve, reject) => {
       // 이미 로드되었는지 확인
       if (window.naver && window.MarkerClustering) {
@@ -94,10 +94,10 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
         loadClusteringScript().then(resolve).catch(reject);
       }
     });
-  };
+  }, []); // 빈 의존성 배열로 함수를 한 번만 생성
 
   const loadClusteringScript = () => {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => { // reject 매개변수 제거
       if (window.MarkerClustering) {
         resolve();
         return;
@@ -193,7 +193,7 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
 
           try {
             // 네이버 공식 문서 방식으로 MarkerClustering 생성
-            const markerClustering = new window.MarkerClustering({
+            new window.MarkerClustering({
                 minClusterSize: 2,
                 maxZoom: 15,
                 map: map,
@@ -202,8 +202,8 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
                 gridSize: 120,
                 icons: [htmlMarker1, htmlMarker2, htmlMarker3],
                 indexGenerator: [10, 50, 100],
-                stylingFunction: function(clusterMarker: any, count: number) {
-                    // jQuery 없이 vanilla JS로 구현
+                stylingFunction: function(clusterMarker: NaverMarkerInstance, count: number) {
+                    // 타입을 NaverMarkerInstance로 변경
                     const element = clusterMarker.getElement();
                     const firstDiv = element.querySelector('div:first-child');
                     if (firstDiv) {
