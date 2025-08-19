@@ -37,9 +37,10 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// Geocoding 함수를 안정적인 네이버 API로 수정
+// Geocoding 함수 수정 (URL 및 헤더)
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   try {
+    console.log('Geocoding 요청 주소:', address);
     const response = await fetch(
       `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
       {
@@ -50,22 +51,28 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
       }
     );
     
+    console.log('API 응답 상태:', response.status);
     const data = await response.json();
-
+    console.log('API 응답 데이터:', JSON.stringify(data, null, 2));
+    
     if (data.addresses && data.addresses.length > 0) {
       const result = data.addresses[0];
-      return {
+      const coords = {
         lat: parseFloat(result.y),
         lng: parseFloat(result.x)
       };
+      console.log('변환된 좌표:', coords);
+      return coords;
     }
+    console.log('geocoding 결과 없음');
     return null;
   } catch (error) {
-    console.error('Naver Geocoding error:', error);
+    console.error('Geocoding error:', error);
     return null;
   }
 }
 
+// GET 함수에 빠진 request 인자 추가
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
