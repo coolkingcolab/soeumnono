@@ -37,7 +37,7 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// Geocoding 함수 추가
+// Geocoding 함수
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   try {
     const response = await fetch(
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
         return normalizedDbAddress === normalizedSearch;
     });
 
-    const reportsToReturn = filteredReports.map(({ uid: _, ...rest }) => rest);
+    const reportsToReturn = filteredReports.map(({ uid, ...rest }) => rest);
 
     return NextResponse.json(reportsToReturn);
   }
@@ -145,7 +145,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
 
-    // 주소를 좌표로 변환
     const coordinates = await geocodeAddress(address);
     
     const isTestUser = uid === process.env.TEST_USER_UID;
@@ -180,7 +179,6 @@ export async function POST(request: NextRequest) {
       score,
       noiseTypes,
       createdAt: FieldValue.serverTimestamp(),
-      // 좌표가 있으면 추가, 없으면 undefined (선택적 필드)
       ...(coordinates && { lat: coordinates.lat, lng: coordinates.lng })
     };
 
