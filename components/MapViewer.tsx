@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 import { getReportLocations } from '@/lib/api';
 
-// Naver Maps API 타입 정의 (any 타입을 구체적인 타입으로 수정)
+// Naver Maps API 타입 정의
 interface NaverMapInstance {
   setCenter: (latlng: NaverLatLngInstance) => void;
   setZoom: (zoom: number) => void;
@@ -48,9 +48,12 @@ declare global {
           addListener: (map: NaverMapInstance, event: string, handler: (e?: object) => void) => void;
         };
         Service: NaverService;
+        // clustering 서브모듈 추가
+        clustering: {
+          MarkerClustering: new (options: object) => void;
+        };
       };
     };
-    MarkerClustering: new (options: object) => void;
   }
 }
 
@@ -65,28 +68,27 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
   const loadScripts = () => {
     return new Promise<void>((resolve, reject) => {
       if (document.getElementById('naver-maps-script')) {
-        if (document.getElementById('marker-clustering-script')) {
-          resolve();
-          return;
-        }
+        resolve();
+        return;
       }
+      
       const mapScript = document.createElement('script');
       mapScript.id = 'naver-maps-script';
-      mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
+      // clustering 서브모듈을 포함하여 한 번에 로드
+      mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder,clustering`;
       mapScript.async = true;
       mapScript.defer = true;
       document.head.appendChild(mapScript);
 
       mapScript.onload = () => {
-        const clusteringScript = document.createElement('script');
-        clusteringScript.id = 'marker-clustering-script';
-        // 스크립트 주소를 src(소스)가 아닌 dist(배포) 버전으로 수정
-        clusteringScript.src = 'https://navermaps.github.io/maps.js/dist/marker-clustering.js';
-        clusteringScript.async = true;
-        clusteringScript.defer = true;
-        document.head.appendChild(clusteringScript);
-        clusteringScript.onload = () => resolve();
-        clusteringScript.onerror = (error) => reject(error);
+        // clustering 모듈이 로드될 때까지 잠시 대기
+        setTimeout(() => {
+          if (window.naver?.maps?.clustering) {
+            resolve();
+          } else {
+            reject(new Error('Clustering module not loaded'));
+          }
+        }, 100);
       };
       mapScript.onerror = (error) => reject(error);
     });
@@ -111,7 +113,8 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
       mapRef.current = map;
 
       getReportLocations().then(locations => {
-        if (!window.MarkerClustering || locations.length === 0) return;
+        // clustering 모듈 사용 방법 수정
+        if (!window.naver.maps.clustering?.MarkerClustering || locations.length === 0) return;
 
         const markers = locations.map(loc => {
             return new window.naver.maps.Marker({
@@ -129,7 +132,7 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
             { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#ef4444;border-radius:50%;opacity:0.9;"></div>' },
         ].map(icon => ({ ...icon, size: new window.naver.maps.Size(40, 40), anchor: new window.naver.maps.Point(20, 20) }));
 
-        new window.MarkerClustering({
+        new window.naver.maps.clustering.MarkerClustering({
             minClusterSize: 2,
             maxZoom: 15,
             map: map,
@@ -146,7 +149,7 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
                 }
             }
         });
-      });
+      }).catch(console.error);
     }).catch(console.error);
   }, []);
 
