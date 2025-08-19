@@ -37,37 +37,33 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// Geocoding 함수
+// Geocoding 함수를 주소기반산업지원서비스 API로 변경
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
+  const apiKey = process.env.ROAD_NAME_API_KEY;
+  if (!apiKey) {
+    console.error('ROAD_NAME_API_KEY is not set');
+    return null;
+  }
+  
+  const apiUrl = `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${apiKey}&currentPage=1&countPerPage=1&keyword=${encodeURIComponent(
+    address
+  )}&resultType=json`;
+
   try {
-    const response = await fetch(
-      `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_API_CLIENT_ID!,
-          'X-NCP-APIGW-API-KEY': process.env.NAVER_API_CLIENT_SECRET!,
-        },
-      }
-    );
-
-    // --- 디버깅을 위한 로그 추가 ---
-    const responseText = await response.text();
-    console.log("Geocoding API 응답 상태:", response.status);
-    console.log("Geocoding API 응답 내용:", responseText);
-    // --- 디버깅 코드 끝 ---
-
-    const data = JSON.parse(responseText);
+    const response = await fetch(apiUrl);
+    const data = await response.json();
     
-    if (data.addresses && data.addresses.length > 0) {
-      const result = data.addresses[0];
+    if (data.results?.juso && data.results.juso.length > 0) {
+      const result = data.results.juso[0];
+      // entY: 위도(latitude), entX: 경도(longitude)
       return {
-        lat: parseFloat(result.y),
-        lng: parseFloat(result.x)
+        lat: parseFloat(result.entY),
+        lng: parseFloat(result.entX)
       };
     }
     return null;
   } catch (error) {
-    console.error('Geocoding error:', error);
+    console.error('Geocoding error with juso.go.kr:', error);
     return null;
   }
 }
