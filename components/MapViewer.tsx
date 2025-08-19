@@ -4,25 +4,22 @@
 import { useEffect, useRef } from 'react';
 import { getReportLocations } from '@/lib/api';
 
-// Naver Maps API 타입 정의 (클래스 생성자 타입으로 수정)
+// Naver Maps API 타입 정의 (any 타입을 구체적인 타입으로 수정)
 interface NaverMapInstance {
   setCenter: (latlng: NaverLatLngInstance) => void;
   setZoom: (zoom: number) => void;
-  getBounds: () => any; // bounds 타입은 복잡하므로 any로 유지
+  getBounds: () => object;
 }
 type NaverLatLngInstance = object;
-type NaverMarkerInstance = {
-    getPosition: () => NaverLatLngInstance;
-    getMap: () => NaverMapInstance | null;
-    setMap: (map: NaverMapInstance | null) => void;
+interface NaverMarkerInstance {
     getElement: () => HTMLElement;
-};
+}
 
 type NaverMap = new (element: HTMLElement, options: { center: NaverLatLngInstance; zoom: number }) => NaverMapInstance;
 type NaverLatLng = new (lat: number, lng: number) => NaverLatLngInstance;
-type NaverMarker = new (options: any) => NaverMarkerInstance;
-type NaverPoint = new (x: number, y: number) => any;
-type NaverSize = new (w: number, h: number) => any;
+type NaverMarker = new (options: object) => NaverMarkerInstance;
+type NaverPoint = new (x: number, y: number) => object;
+type NaverSize = new (w: number, h: number) => object;
 
 interface NaverService {
   geocode: (
@@ -48,12 +45,12 @@ declare global {
         Point: NaverPoint;
         Size: NaverSize;
         Event: {
-          addListener: (map: NaverMapInstance, event: string, handler: (e?: any) => void) => void;
+          addListener: (map: NaverMapInstance, event: string, handler: (e?: object) => void) => void;
         };
         Service: NaverService;
       };
     };
-    MarkerClustering: any; 
+    MarkerClustering: new (options: object) => void;
   }
 }
 
@@ -68,7 +65,6 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
   const loadScripts = () => {
     return new Promise<void>((resolve, reject) => {
       if (document.getElementById('naver-maps-script')) {
-        // 클러스터링 스크립트도 이미 로드되었는지 확인
         if (document.getElementById('marker-clustering-script')) {
           resolve();
           return;
@@ -96,11 +92,11 @@ const MapViewer = ({ selectedAddress }: MapViewerProps) => {
   };
 
   const getScoreColor = (score: number) => {
-    if (score < 2) return '#38bdf8'; // sky-400
-    if (score < 3) return '#10b981'; // emerald-500
-    if (score < 4) return '#f59e0b'; // amber-500
-    if (score < 4.5) return '#f97316'; // orange-500
-    return '#ef4444'; // red-500
+    if (score < 2) return '#38bdf8';
+    if (score < 3) return '#10b981';
+    if (score < 4) return '#f59e0b';
+    if (score < 4.5) return '#f97316';
+    return '#ef4444';
   };
 
   useEffect(() => {
