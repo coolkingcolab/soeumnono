@@ -1,6 +1,9 @@
 // /app/page.tsx
 'use client';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// 위 주석은 AverageScoreBox가 조건부로 사용될 때 발생하는 ESLint 경고를 비활성화합니다.
+
 import { useState } from 'react';
 import MapViewer from '@/components/MapViewer';
 import AddressSearch from '@/components/AddressSearch';
@@ -11,7 +14,7 @@ import ReportModal from '@/components/ReportModal';
 import RealtimeReportFeed from '@/components/RealtimeReportFeed';
 import RankingList from '@/components/RankingList';
 import CoupangBanner from '@/components/CoupangBanner';
-import MyReports from '@/components/MyReports'; // 나의 평가 기록 컴포넌트 임포트
+import MyReports from '@/components/MyReports';
 import { Report } from '@/types/report';
 
 export default function Home() {
@@ -19,7 +22,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalAddress, setModalAddress] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [reportToEdit, setReportToEdit] = useState<Report | null>(null); // 수정할 평가 데이터 상태
+  const [reportToEdit, setReportToEdit] = useState<Report | null>(null);
 
   const handleAddressSelect = (address: string) => {
     setSelectedAddress(address);
@@ -31,22 +34,21 @@ export default function Home() {
 
   const handleOpenModalForSelectedAddress = () => {
     if (selectedAddress) {
-      setReportToEdit(null); // 새로 만들기 모드로 설정
+      setReportToEdit(null);
       setModalAddress(selectedAddress);
       setIsModalOpen(true);
     }
   };
 
-  // 수정 버튼 클릭 시 실행될 함수
   const handleEditClick = (report: Report) => {
-    setReportToEdit(report); // 수정 모드로 설정
-    setModalAddress(report.address); // 주소는 수정하지 않으므로 기존 주소 사용
+    setReportToEdit(report);
+    setModalAddress(report.address);
     setIsModalOpen(true);
   };
   
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setReportToEdit(null); // 모달이 닫힐 때 수정 상태 초기화
+    setReportToEdit(null);
   };
 
   return (
