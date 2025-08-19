@@ -51,7 +51,14 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
 
   try {
     const response = await fetch(apiUrl);
-    const data = await response.json();
+    
+    // --- 디버깅을 위한 로그 추가 ---
+    const responseText = await response.text();
+    console.log("주소 API 응답 상태:", response.status);
+    console.log("주소 API 응답 내용:", responseText);
+    // --- 디버깅 코드 끝 ---
+
+    const data = JSON.parse(responseText);
     
     if (data.results?.juso && data.results.juso.length > 0) {
       const result = data.results.juso[0];
