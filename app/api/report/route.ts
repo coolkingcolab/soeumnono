@@ -37,42 +37,46 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// Geocoding 함수 수정 (URL 및 헤더)
+// 주소기반산업지원서비스 API 호출 함수
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
+  const apiKey = process.env.ROAD_NAME_API_KEY;
+  if (!apiKey) {
+    console.error('ROAD_NAME_API_KEY is not set');
+    return null;
+  }
+  
+  const apiUrl = `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${apiKey}&currentPage=1&countPerPage=1&keyword=${encodeURIComponent(
+    address
+  )}&resultType=json&addInfoYn=Y`;
+
   try {
-    console.log('Geocoding 요청 주소:', address);
-    const response = await fetch(
-      `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          'x-ncp-apigw-api-key-id': process.env.NAVER_API_CLIENT_ID!,
-          'x-ncp-apigw-api-key': process.env.NAVER_API_CLIENT_SECRET!,
-        },
+    const response = await fetch(apiUrl);
+    
+    console.log("주소 API 응답 상태:", response.status);
+    const responseText = await response.text();
+    console.log("주소 API 응답 내용:", responseText);
+
+    const data = JSON.parse(responseText);
+    
+    if (data.results?.juso && data.results.juso.length > 0) {
+      const result = data.results.juso[0];
+      if (result.entY && result.entX) {
+        const coords = {
+          lat: parseFloat(result.entY),
+          lng: parseFloat(result.entX)
+        };
+        console.log('변환된 좌표:', coords);
+        return coords;
       }
-    );
-    
-    console.log('API 응답 상태:', response.status);
-    const data = await response.json();
-    console.log('API 응답 데이터:', JSON.stringify(data, null, 2));
-    
-    if (data.addresses && data.addresses.length > 0) {
-      const result = data.addresses[0];
-      const coords = {
-        lat: parseFloat(result.y),
-        lng: parseFloat(result.x)
-      };
-      console.log('변환된 좌표:', coords);
-      return coords;
     }
     console.log('geocoding 결과 없음');
     return null;
   } catch (error) {
-    console.error('Geocoding error:', error);
+    console.error('Geocoding error with juso.go.kr:', error);
     return null;
   }
 }
 
-// GET 함수에 빠진 request 인자 추가
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
@@ -131,7 +135,7 @@ export async function GET(request: NextRequest) {
         return normalizedDbAddress === normalizedSearch;
     });
 
-    const reportsToReturn = filteredReports.map(({ uid, ...rest }) => rest);
+    const reportsToReturn = filteredReports.map(({ uid: _, ...rest }) => rest);
 
     return NextResponse.json(reportsToReturn);
   }
@@ -152,6 +156,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
 
+    // 주소를 좌표로 변환
+    console.log('새 보고서 생성 - 주소:', address);
     const coordinates = await geocodeAddress(address);
     
     const isTestUser = uid === process.env.TEST_USER_UID;
@@ -186,8 +192,16 @@ export async function POST(request: NextRequest) {
       score,
       noiseTypes,
       createdAt: FieldValue.serverTimestamp(),
+      // 좌표가 있으면 추가, 없으면 undefined (선택적 필드)
       ...(coordinates && { lat: coordinates.lat, lng: coordinates.lng })
     };
+
+    console.log('저장할 보고서 데이터:', { 
+      address, 
+      score, 
+      hasCoordinates: !!coordinates,
+      coordinates 
+    });
 
     const docRef = await db.collection('reports').add(newReport);
 
