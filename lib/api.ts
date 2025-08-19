@@ -1,7 +1,7 @@
 // /lib/api.ts
 import { Report } from '@/types/report';
 import { ReportSummary } from '@/app/api/report/summary/route';
-import { RankedLocation } from '@/app/api/ranking/route'; // 랭킹 타입 임포트
+import { RankedLocation } from '@/app/api/ranking/route';
 
 const API_BASE_URL = '/api';
 
@@ -42,8 +42,13 @@ export const getLatestReports = async (): Promise<Omit<Report, 'uid'>[]> => {
     return handleResponse(response);
 };
 
-// 랭킹 데이터를 위한 새로운 API 호출 함수 추가
 export const getRanking = async (): Promise<RankedLocation[]> => {
     const response = await fetch(`${API_BASE_URL}/ranking`, { cache: 'no-store' });
+    return handleResponse(response);
+};
+
+// 지도 마커 데이터를 위한 새로운 API 호출 함수 추가
+export const getReportLocations = async (): Promise<{ lat: number; lng: number; score: number }[]> => {
+    const response = await fetch(`${API_BASE_URL}/report/locations`, { cache: 'no-store' });
     return handleResponse(response);
 };
