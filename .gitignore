@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Firebase Admin SDK 키 파일 제외
 *-adminsdk-*.json
+*firebase-adminsdk*.json 
+.env.local 
