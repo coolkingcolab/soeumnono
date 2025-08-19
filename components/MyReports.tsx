@@ -12,6 +12,10 @@ interface MyReportsProps {
   onEditClick: (report: Report) => void;
 }
 
+interface SerializedTimestamp {
+  _seconds: number;
+}
+
 const MyReports = ({ refreshKey, onEditClick }: MyReportsProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [myReports, setMyReports] = useState<Report[]>([]);
@@ -36,8 +40,8 @@ const MyReports = ({ refreshKey, onEditClick }: MyReportsProps) => {
 
   const calculateDaysLeft = () => {
     if (myReports.length < 5) return null;
-    const lastReport = myReports[0]; // assumes reports are sorted by date desc
-    const lastReportDate = new Date((lastReport.createdAt as any)._seconds * 1000);
+    const lastReport = myReports[0];
+    const lastReportDate = new Date((lastReport.createdAt as unknown as SerializedTimestamp)._seconds * 1000);
     const nextAvailableDate = new Date(lastReportDate.getTime() + 180 * 24 * 60 * 60 * 1000);
     const timeLeft = nextAvailableDate.getTime() - new Date().getTime();
     const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
@@ -45,7 +49,7 @@ const MyReports = ({ refreshKey, onEditClick }: MyReportsProps) => {
   };
 
   if (!currentUser) {
-    return null; // 로그인하지 않은 사용자에게는 이 컴포넌트를 보여주지 않음
+    return null;
   }
 
   return (
