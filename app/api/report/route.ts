@@ -37,6 +37,35 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
+// Geocoding 함수 추가
+async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
+  try {
+    const response = await fetch(
+      `https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          'X-NCP-APIGW-API-KEY-ID': process.env.NAVER_MAP_CLIENT_ID!,
+          'X-NCP-APIGW-API-KEY': process.env.NAVER_MAP_CLIENT_SECRET!,
+        },
+      }
+    );
+
+    const data = await response.json();
+    
+    if (data.addresses && data.addresses.length > 0) {
+      const result = data.addresses[0];
+      return {
+        lat: parseFloat(result.y),
+        lng: parseFloat(result.x)
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get('address');
@@ -95,7 +124,6 @@ export async function GET(request: NextRequest) {
         return normalizedDbAddress === normalizedSearch;
     });
 
-    // 사용하지 않는 uid 변수를 선언하지 않고 바로 처리하도록 수정
     const reportsToReturn = filteredReports.map(({ uid: _, ...rest }) => rest);
 
     return NextResponse.json(reportsToReturn);
@@ -116,6 +144,9 @@ export async function POST(request: NextRequest) {
     if (!address || typeof score !== 'number' || !Array.isArray(noiseTypes)) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
+
+    // 주소를 좌표로 변환
+    const coordinates = await geocodeAddress(address);
     
     const isTestUser = uid === process.env.TEST_USER_UID;
 
@@ -149,6 +180,8 @@ export async function POST(request: NextRequest) {
       score,
       noiseTypes,
       createdAt: FieldValue.serverTimestamp(),
+      // 좌표가 있으면 추가, 없으면 undefined (선택적 필드)
+      ...(coordinates && { lat: coordinates.lat, lng: coordinates.lng })
     };
 
     const docRef = await db.collection('reports').add(newReport);
