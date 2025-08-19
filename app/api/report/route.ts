@@ -37,7 +37,7 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// 주소기반산업지원서비스 API 호출 함수
+// Geocoding 함수
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   const apiKey = process.env.ROAD_NAME_API_KEY;
   if (!apiKey) {
@@ -51,25 +51,17 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
 
   try {
     const response = await fetch(apiUrl);
-    
-    console.log("주소 API 응답 상태:", response.status);
-    const responseText = await response.text();
-    console.log("주소 API 응답 내용:", responseText);
-
-    const data = JSON.parse(responseText);
+    const data = await response.json();
     
     if (data.results?.juso && data.results.juso.length > 0) {
       const result = data.results.juso[0];
       if (result.entY && result.entX) {
-        const coords = {
+        return {
           lat: parseFloat(result.entY),
           lng: parseFloat(result.entX)
         };
-        console.log('변환된 좌표:', coords);
-        return coords;
       }
     }
-    console.log('geocoding 결과 없음');
     return null;
   } catch (error) {
     console.error('Geocoding error with juso.go.kr:', error);
@@ -121,23 +113,21 @@ export async function GET(request: NextRequest) {
 
   if (address) {
     const reportsRef = db.collection('reports');
-    const querySnapshot = await reportsRef.get();
+    const querySnapshot = await reportsRef.where('address', '==', address).get();
     
-    const allReports: Report[] = [];
+    const reports: Omit<Report, 'uid'>[] = [];
     querySnapshot.forEach(doc => {
-        allReports.push({ id: doc.id, ...doc.data() } as Report);
+      const data = doc.data() as Report;
+      reports.push({
+        id: doc.id,
+        address: data.address,
+        score: data.score,
+        noiseTypes: data.noiseTypes,
+        createdAt: data.createdAt,
+      });
     });
 
-    const normalizedSearch = address.replace(/\s+/g, '');
-
-    const filteredReports = allReports.filter(report => {
-        const normalizedDbAddress = report.address.replace(/\s+/g, '');
-        return normalizedDbAddress === normalizedSearch;
-    });
-
-    const reportsToReturn = filteredReports.map(({ uid: _, ...rest }) => rest);
-
-    return NextResponse.json(reportsToReturn);
+    return NextResponse.json(reports);
   }
 
   return NextResponse.json({ error: 'Invalid request. Provide "address" or "checkEligibility".' }, { status: 400 });
@@ -156,8 +146,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data provided.' }, { status: 400 });
     }
 
-    // 주소를 좌표로 변환
-    console.log('새 보고서 생성 - 주소:', address);
     const coordinates = await geocodeAddress(address);
     
     const isTestUser = uid === process.env.TEST_USER_UID;
@@ -192,16 +180,8 @@ export async function POST(request: NextRequest) {
       score,
       noiseTypes,
       createdAt: FieldValue.serverTimestamp(),
-      // 좌표가 있으면 추가, 없으면 undefined (선택적 필드)
       ...(coordinates && { lat: coordinates.lat, lng: coordinates.lng })
     };
-
-    console.log('저장할 보고서 데이터:', { 
-      address, 
-      score, 
-      hasCoordinates: !!coordinates,
-      coordinates 
-    });
 
     const docRef = await db.collection('reports').add(newReport);
 
