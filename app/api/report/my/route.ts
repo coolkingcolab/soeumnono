@@ -1,7 +1,7 @@
 // /app/api/report/my/route.ts
 import { NextResponse } from 'next/server';
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore'; // Timestamp import 제거
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import { Report } from '@/types/report';
