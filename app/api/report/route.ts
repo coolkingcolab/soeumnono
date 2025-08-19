@@ -37,41 +37,31 @@ async function verifyUser(): Promise<string | null> {
   }
 }
 
-// Geocoding 함수를 주소기반산업지원서비스 API로 변경
+// Geocoding 함수를 안정적인 네이버 API로 수정
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
-  const apiKey = process.env.ROAD_NAME_API_KEY;
-  if (!apiKey) {
-    console.error('ROAD_NAME_API_KEY is not set');
-    return null;
-  }
-  
-  const apiUrl = `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${apiKey}&currentPage=1&countPerPage=1&keyword=${encodeURIComponent(
-    address
-  )}&resultType=json&addInfoYn=Y`;
-
   try {
-    const response = await fetch(apiUrl);
-    
-    // --- 디버깅을 위한 로그 추가 ---
-    const responseText = await response.text();
-    console.log("주소 API 응답 상태:", response.status);
-    console.log("주소 API 응답 내용:", responseText);
-    // --- 디버깅 코드 끝 ---
-
-    const data = JSON.parse(responseText);
-    
-    if (data.results?.juso && data.results.juso.length > 0) {
-      const result = data.results.juso[0];
-      if (result.entY && result.entX) {
-        return {
-          lat: parseFloat(result.entY),
-          lng: parseFloat(result.entX)
-        };
+    const response = await fetch(
+      `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          'x-ncp-apigw-api-key-id': process.env.NAVER_API_CLIENT_ID!,
+          'x-ncp-apigw-api-key': process.env.NAVER_API_CLIENT_SECRET!,
+        },
       }
+    );
+    
+    const data = await response.json();
+
+    if (data.addresses && data.addresses.length > 0) {
+      const result = data.addresses[0];
+      return {
+        lat: parseFloat(result.y),
+        lng: parseFloat(result.x)
+      };
     }
     return null;
   } catch (error) {
-    console.error('Geocoding error with juso.go.kr:', error);
+    console.error('Naver Geocoding error:', error);
     return null;
   }
 }
