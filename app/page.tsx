@@ -64,7 +64,10 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 h-[50vh] lg:h-[60vh] bg-white rounded-lg shadow-lg overflow-hidden relative">
-          <MapViewer selectedAddress={selectedAddress} />
+          <MapViewer
+            selectedAddress={selectedAddress}
+            onMarkerClick={handleAddressSelect} // 마커 클릭 시 실행될 함수 전달
+          />
         </div>
 
         <div className="flex flex-col gap-6">
