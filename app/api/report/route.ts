@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     if (now - lastReportTime > sixMonthsInMillis) {
       return NextResponse.json({ eligible: true });
     } else {
-      return NextResponse.json({ eligible: false, reason: 'You can submit a new report every 6 months after the initial 5 reports.' });
+      return NextResponse.json({ eligible: false, reason: '최초 5건 평가 후에는 6개월마다 1건씩 추가 평가가 가능합니다.' });
     }
   }
 
