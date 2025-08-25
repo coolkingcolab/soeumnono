@@ -11,12 +11,12 @@ import {
   signOut,
   User,
 } from 'firebase/auth';
-import PhoneAuthModal from './PhoneAuthModal';
+// import PhoneAuthModal from './PhoneAuthModal'; // 전화번호 로그인을 다시 사용할 때 주석 해제
 
 const AuthButton = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false);
+  // const [isPhoneModalOpen, setIsPhoneModalOpen] = useState(false); // 전화번호 로그인을 다시 사용할 때 주석 해제
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -72,7 +72,6 @@ const AuthButton = () => {
                 className="w-8 h-8 rounded-full"
               />
             )}
-            {/* 사용자 이름 텍스트 색상을 text-slate-900으로 변경 */}
             <span className="text-sm font-medium hidden sm:block text-slate-900">
               {currentUser.displayName || currentUser.phoneNumber}
             </span>
@@ -91,19 +90,25 @@ const AuthButton = () => {
             >
               Google 로그인
             </button>
+            {/* 전화번호 로그인을 다시 사용할 때 아래 버튼 주석 해제 */}
+            {/*
             <button
               onClick={() => setIsPhoneModalOpen(true)}
               className="px-3 py-1.5 text-sm font-semibold text-white bg-gray-700 rounded-md hover:bg-gray-800 transition-colors"
             >
               전화번호 로그인
             </button>
+            */}
           </div>
         )}
       </div>
+      {/* 전화번호 로그인을 다시 사용할 때 아래 모달 주석 해제 */}
+      {/*
       <PhoneAuthModal
         isOpen={isPhoneModalOpen}
         onClose={() => setIsPhoneModalOpen(false)}
       />
+      */}
     </>
   );
 };
