@@ -53,12 +53,6 @@ export const getRanking = async (): Promise<RankedLocation[]> => {
     return handleResponse(response);
 };
 
-// 지도 마커 데이터를 위한 새로운 API 호출 함수 추가
-export const getReportLocations = async (): Promise<{ lat: number; lng: number; score: number }[]> => {
-    const response = await fetch(`${API_BASE_URL}/report/locations`, { cache: 'no-store' });
-    return handleResponse(response);
-};
-
 // 나의 평가 기록을 가져오는 API 호출 함수
 export const getMyReports = async (): Promise<Report[]> => {
     const response = await fetch(`${API_BASE_URL}/report/my`, { cache: 'no-store' });
