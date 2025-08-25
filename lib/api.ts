@@ -42,6 +42,12 @@ export const getLatestReports = async (): Promise<Omit<Report, 'uid'>[]> => {
     return handleResponse(response);
 };
 
+// API 응답 타입에 address 추가
+export const getReportLocations = async (): Promise<{ lat: number; lng: number; score: number; address: string; }[]> => {
+    const response = await fetch(`${API_BASE_URL}/report/locations`, { cache: 'no-store' });
+    return handleResponse(response);
+};
+
 export const getRanking = async (): Promise<RankedLocation[]> => {
     const response = await fetch(`${API_BASE_URL}/ranking`, { cache: 'no-store' });
     return handleResponse(response);
