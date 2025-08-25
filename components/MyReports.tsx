@@ -54,12 +54,12 @@ const MyReports = ({ refreshKey, onEditClick }: MyReportsProps) => {
 
   return (
     <div className="p-4 bg-white rounded-lg shadow">
-      <h3 className="text-lg font-semibold mb-3 text-slate-800">나의 평가 기록</h3>
+      <h3 className="text-lg font-semibold mb-3 text-black">나의 평가 기록</h3>
       {isLoading ? (
-        <p className="text-sm text-slate-500">기록을 불러오는 중...</p>
+        <p className="text-sm text-slate-700">기록을 불러오는 중...</p>
       ) : (
         <>
-          <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md mb-4 text-sm">
+          <div className="flex justify-between items-center bg-slate-50 p-3 rounded-md mb-4 text-sm text-slate-800">
             <p>총 <span className="font-bold">{myReports.length}</span>건의 평가를 남겼습니다.</p>
             {myReports.length >= 5 && (
               <p className="text-right">
@@ -72,8 +72,8 @@ const MyReports = ({ refreshKey, onEditClick }: MyReportsProps) => {
               {myReports.map(report => (
                 <li key={report.id} className="flex justify-between items-center text-sm border-b border-slate-100 pb-2">
                   <div>
-                    <p className="font-semibold text-slate-700">{report.address}</p>
-                    <p className="text-xs text-slate-500">점수: {report.score}점</p>
+                    <p className="font-semibold text-slate-800">{report.address}</p>
+                    <p className="text-xs text-slate-600">점수: {report.score}점</p>
                   </div>
                   <button 
                     onClick={() => onEditClick(report)}
@@ -85,7 +85,7 @@ const MyReports = ({ refreshKey, onEditClick }: MyReportsProps) => {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-center text-slate-500 py-4">아직 남긴 평가가 없습니다.</p>
+            <p className="text-sm text-center text-slate-700 py-4">아직 남긴 평가가 없습니다.</p>
           )}
         </>
       )}
