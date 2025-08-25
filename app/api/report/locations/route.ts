@@ -5,6 +5,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { Report } from '@/types/report';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const serviceAccount = {
   projectId: process.env.FIREBASE_PROJECT_ID,
@@ -12,7 +13,6 @@ const serviceAccount = {
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
 };
 
-// 다른 API 라우트에서 이미 초기화되었을 수 있으므로 확인 후 초기화
 if (!getApps().length) {
   initializeApp({ credential: cert(serviceAccount) });
 }
@@ -24,15 +24,15 @@ export async function GET() {
     const reportsRef = db.collection('reports');
     const snapshot = await reportsRef.get();
 
-    const locations: { lat: number; lng: number; score: number }[] = [];
+    const locations: { lat: number; lng: number; score: number; address: string }[] = [];
     snapshot.forEach(doc => {
       const data = doc.data() as Report;
-      // 좌표 정보가 있는 평가만 필터링
       if (typeof data.lat === 'number' && typeof data.lng === 'number') {
         locations.push({
           lat: data.lat,
           lng: data.lng,
           score: data.score,
+          address: data.address, // 주소 정보 추가
         });
       }
     });
