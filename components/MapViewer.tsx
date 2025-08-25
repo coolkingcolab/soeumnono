@@ -63,7 +63,6 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<NaverMapInstance | null>(null);
   
-  // onMarkerClick 함수가 변경되어도 useEffect가 재실행되지 않도록 ref로 관리
   const onMarkerClickRef = useRef(onMarkerClick);
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
@@ -115,9 +114,12 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
       mapRef.current = map;
 
       getReportLocations().then(locations => {
-        if (!window.MarkerClustering || locations.length === 0) return;
+        // --- 좌표가 null이 아닌 유효한 데이터만 필터링 ---
+        const validLocations = locations.filter(loc => loc.lat != null && loc.lng != null);
 
-        const markers = locations.map(loc => {
+        if (!window.MarkerClustering || validLocations.length === 0) return;
+
+        const markers = validLocations.map(loc => {
             const marker = new window.naver.maps.Marker({
                 position: new window.naver.maps.LatLng(loc.lat, loc.lng),
                 icon: {
