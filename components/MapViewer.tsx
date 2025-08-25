@@ -56,12 +56,18 @@ declare global {
 
 interface MapViewerProps {
   selectedAddress: string | null;
-  onMarkerClick: (address: string) => void; // 마커 클릭 핸들러 prop 추가
+  onMarkerClick: (address: string) => void;
 }
 
 const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
   const mapElement = useRef<HTMLDivElement>(null);
   const mapRef = useRef<NaverMapInstance | null>(null);
+  
+  // onMarkerClick 함수가 변경되어도 useEffect가 재실행되지 않도록 ref로 관리
+  const onMarkerClickRef = useRef(onMarkerClick);
+  useEffect(() => {
+    onMarkerClickRef.current = onMarkerClick;
+  });
 
   const loadScripts = useCallback(() => {
     return new Promise<void>((resolve) => {
@@ -120,13 +126,9 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
                 }
             });
 
-            // ==========================================================
-            // 각 마커에 클릭 이벤트 리스너를 추가하는 코드
-            // ==========================================================
             window.naver.maps.Event.addListener(marker, 'click', () => {
-                onMarkerClick(loc.address);
+                onMarkerClickRef.current(loc.address);
             });
-            // ==========================================================
 
             return marker;
         });
@@ -156,7 +158,7 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
         });
       });
     }).catch(console.error);
-  }, [loadScripts, onMarkerClick]);
+  }, [loadScripts]);
 
   useEffect(() => {
     if (selectedAddress && mapRef.current && window.naver) {
