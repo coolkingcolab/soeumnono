@@ -55,7 +55,6 @@ declare global {
   }
 }
 
-// onMarkerClick prop을 추가하여 타입 오류 해결
 interface MapViewerProps {
   selectedAddress: string | null;
   onMarkerClick: (address: string) => void;
@@ -73,19 +72,49 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
 
   const loadClusteringScript = useCallback(() => {
     return new Promise<void>((resolve) => {
-      if (window.MarkerClustering || document.getElementById('marker-clustering-script')) {
+      if (window.MarkerClustering) {
         resolve();
         return;
       }
+
+      if (document.getElementById('marker-clustering-script')) {
+        // 스크립트가 이미 추가되었지만 MarkerClustering이 아직 없는 경우 대기
+        const checkInterval = setInterval(() => {
+          if (window.MarkerClustering) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+        
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve();
+        }, 5000);
+        return;
+      }
+
       const clusteringScript = document.createElement('script');
       clusteringScript.id = 'marker-clustering-script';
-      clusteringScript.src = 'https://navermaps.github.io/maps.js/dist/marker-clustering.js';
+      // 원래 작동하던 URL 사용
+      clusteringScript.src = 'https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js';
       clusteringScript.async = true;
-      clusteringScript.defer = true;
       document.head.appendChild(clusteringScript);
-      clusteringScript.onload = () => resolve();
-      clusteringScript.onerror = () => {
-        console.warn('Clustering script failed to load.');
+      
+      clusteringScript.onload = () => {
+        console.log('MarkerClustering loaded');
+        // 약간의 지연 후 확인
+        setTimeout(() => {
+          if (window.MarkerClustering) {
+            resolve();
+          } else {
+            console.warn('MarkerClustering not available after load');
+            resolve();
+          }
+        }, 100);
+      };
+      
+      clusteringScript.onerror = (error) => {
+        console.warn('Clustering script failed to load:', error);
         resolve(); // 실패해도 지도는 표시
       };
     });
@@ -93,20 +122,26 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
 
   const loadScripts = useCallback(() => {
     return new Promise<void>((resolve, reject) => {
-      if (window.naver) {
-        loadClusteringScript().then(resolve).catch(reject);
+      if (window.naver && window.MarkerClustering) {
+        resolve();
         return;
       }
-      const mapScript = document.createElement('script');
-      mapScript.id = 'naver-maps-script';
-      mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
-      mapScript.async = true;
-      mapScript.defer = true;
-      document.head.appendChild(mapScript);
-      mapScript.onload = () => {
+
+      if (!document.getElementById('naver-maps-script')) {
+        const mapScript = document.createElement('script');
+        mapScript.id = 'naver-maps-script';
+        mapScript.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=geocoder`;
+        mapScript.async = true;
+        document.head.appendChild(mapScript);
+        
+        mapScript.onload = () => {
+          console.log('Naver Maps loaded');
+          loadClusteringScript().then(resolve).catch(reject);
+        };
+        mapScript.onerror = reject;
+      } else if (window.naver) {
         loadClusteringScript().then(resolve).catch(reject);
-      };
-      mapScript.onerror = reject;
+      }
     });
   }, [loadClusteringScript]);
 
@@ -129,9 +164,15 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
       mapRef.current = map;
 
       getReportLocations().then(locations => {
+        console.log('Locations loaded:', locations.length);
+        
         const validLocations = locations.filter(loc => loc.lat != null && loc.lng != null);
+        console.log('Valid locations:', validLocations.length);
 
-        if (!window.MarkerClustering || validLocations.length === 0) return;
+        if (validLocations.length === 0) {
+          console.log('No valid locations to display');
+          return;
+        }
 
         const markers = validLocations.map(loc => {
             const marker = new window.naver.maps.Marker({
@@ -140,6 +181,7 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
                     content: `<div style="cursor:pointer; width:12px;height:12px;background-color:${getScoreColor(loc.score)};border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.4);"></div>`,
                     anchor: new window.naver.maps.Point(6, 6),
                 }
+                // map 설정하지 않음 - 클러스터링에서 관리
             });
 
             // 마커에 클릭 이벤트 리스너 추가
@@ -150,32 +192,60 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
             return marker;
         });
 
-        const clusterIcons = [
-            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#10b981;border-radius:50%;opacity:0.9;"></div>' },
-            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#f59e0b;border-radius:50%;opacity:0.9;"></div>' },
-            { content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#ef4444;border-radius:50%;opacity:0.9;"></div>' },
-        ].map(icon => ({ ...icon, size: new window.naver.maps.Size(40, 40), anchor: new window.naver.maps.Point(20, 20) }));
-
-        new window.MarkerClustering({
-            minClusterSize: 2,
-            maxZoom: 15,
-            map: map,
-            markers: markers,
-            disableClickZoom: false,
-            gridSize: 120,
-            icons: clusterIcons,
-            indexGenerator: [10, 50, 100],
-            stylingFunction: (clusterMarker: NaverMarkerInstance, count: number) => {
-                const element = clusterMarker.getElement();
-                const firstChild = element.querySelector('div:first-child');
-                if (firstChild) {
-                    firstChild.textContent = String(count);
-                }
+        // 클러스터링 적용
+        if (window.MarkerClustering) {
+          console.log('Applying MarkerClustering');
+          
+          const clusterIcons = [
+            {
+              content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#10b981;border-radius:50%;opacity:0.9;"></div>',
+              size: new window.naver.maps.Size(40, 40),
+              anchor: new window.naver.maps.Point(20, 20)
+            },
+            {
+              content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#f59e0b;border-radius:50%;opacity:0.9;"></div>',
+              size: new window.naver.maps.Size(40, 40),
+              anchor: new window.naver.maps.Point(20, 20)
+            },
+            {
+              content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background-color:#ef4444;border-radius:50%;opacity:0.9;"></div>',
+              size: new window.naver.maps.Size(40, 40),
+              anchor: new window.naver.maps.Point(20, 20)
             }
-        });
-      });
+          ];
+
+          try {
+            new window.MarkerClustering({
+                minClusterSize: 2,
+                maxZoom: 15,
+                map: map,
+                markers: markers,
+                disableClickZoom: false,
+                gridSize: 120,
+                icons: clusterIcons,
+                indexGenerator: [10, 50, 100],
+                stylingFunction: (clusterMarker: NaverMarkerInstance, count: number) => {
+                    const element = clusterMarker.getElement();
+                    const firstDiv = element.querySelector('div:first-child');
+                    if (firstDiv) {
+                        firstDiv.textContent = String(count);
+                    }
+                }
+            });
+            console.log('MarkerClustering applied successfully');
+          } catch (error) {
+            console.warn('MarkerClustering failed, showing individual markers:', error);
+            // 클러스터링 실패 시 개별 마커 표시
+            markers.forEach(marker => marker.setMap(map));
+          }
+        } else {
+          console.log('MarkerClustering not available, showing individual markers');
+          // 클러스터링이 없으면 개별 마커 표시
+          markers.forEach(marker => marker.setMap(map));
+        }
+      }).catch(console.error);
     }).catch(console.error);
-  }, [loadScripts]); // 의존성 배열 경고 해결
+  }, []); // 의존성 배열을 빈 배열로 변경
 
   useEffect(() => {
     if (selectedAddress && mapRef.current && window.naver) {
