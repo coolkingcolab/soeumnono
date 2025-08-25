@@ -13,6 +13,7 @@ interface NaverMapInstance {
 type NaverLatLngInstance = object;
 interface NaverMarkerInstance {
     getElement: () => HTMLElement;
+    setMap: (map: NaverMapInstance | null) => void;
 }
 
 type NaverMap = new (element: HTMLElement, options: { center: NaverLatLngInstance; zoom: number }) => NaverMapInstance;
@@ -159,7 +160,7 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
         });
       });
     }).catch(console.error);
-  }, []); // 의존성 배열을 []로 수정하여 한 번만 실행되도록 보장
+  }, [loadScripts]); // 의존성 배열을 이전처럼 loadScripts로 유지
 
   useEffect(() => {
     if (selectedAddress && mapRef.current && window.naver) {
