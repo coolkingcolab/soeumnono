@@ -114,7 +114,6 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
       mapRef.current = map;
 
       getReportLocations().then(locations => {
-        // --- 좌표가 null이 아닌 유효한 데이터만 필터링 ---
         const validLocations = locations.filter(loc => loc.lat != null && loc.lng != null);
 
         if (!window.MarkerClustering || validLocations.length === 0) return;
@@ -160,7 +159,7 @@ const MapViewer = ({ selectedAddress, onMarkerClick }: MapViewerProps) => {
         });
       });
     }).catch(console.error);
-  }, [loadScripts]);
+  }, []); // 의존성 배열을 []로 수정하여 한 번만 실행되도록 보장
 
   useEffect(() => {
     if (selectedAddress && mapRef.current && window.naver) {
